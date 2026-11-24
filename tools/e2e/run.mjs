@@ -1,0 +1,123 @@
+import puppeteer from 'puppeteer-core';
+const browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH ?? '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--disable-gpu'], protocolTimeout: 30000 });
+const page = await browser.newPage();
+const errors = [];
+page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
+page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
+await page.setViewport({ width: 1280, height: 900 });
+const base = process.env.BASE_URL ?? 'http://localhost:4173/';
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const results = [];
+const check = (name, ok, extra = '') => { results.push(`${ok ? 'PASS' : 'FAIL'} ${name} ${extra}`); };
+
+await page.goto(base, { waitUntil: 'networkidle0' });
+check('home renders title', (await page.$eval('h1', (e) => e.textContent)).includes('Node.js Backend'));
+check('15 module cards', (await page.$$('.card')).length === 15);
+await page.screenshot({ path: (process.env.SHOT_DIR ?? '/tmp') + '/home.png' });
+
+await page.goto(base + '#/lesson/m01-l02', { waitUntil: 'networkidle0' });
+await sleep(500);
+check('lesson title', (await page.$eval('h1', (e) => e.textContent)).includes('Event loop'));
+// sim stepping
+const stepText = async () => page.$eval('.sim-step b', (e) => e.textContent);
+const first = await stepText();
+await page.click('button[aria-label="Шаг вперёд"]');
+await page.click('button[aria-label="Шаг вперёд"]');
+const second = await stepText();
+check('sim steps change frame', first !== second, `${first} -> ${second}`);
+// go to end via range
+await page.$eval('.sim .player input[type=range]', (el) => { el.value = el.max; el.dispatchEvent(new Event('input', { bubbles: true })); });
+await sleep(200);
+const logItems = await page.$$eval('.sim-log li', (els) => els.map((e) => e.textContent));
+check('basics scenario final log', JSON.stringify(logItems) === JSON.stringify(['script start', 'script end', 'nextTick', 'promise.then', 'setTimeout']), JSON.stringify(logItems));
+// switch scenario
+const pickBtns = await page.$$('.sim .sim-pick .chip-btn');
+await pickBtns[4].click();
+await sleep(200);
+await page.$eval('.sim .player input[type=range]', (el) => { el.value = el.max; el.dispatchEvent(new Event('input', { bubbles: true })); });
+await sleep(200);
+const io = await page.$$eval('.sim-log li', (els) => els.map((e) => e.textContent));
+check('io scenario final log', io.join('|') === 'start|end|I/O callback|nextTick|promise|setImmediate|setTimeout', io.join('|'));
+await page.screenshot({ path: (process.env.SHOT_DIR ?? '/tmp') + '/lesson-sim.png', fullPage: false });
+
+// predict game: solve first game by clicking right chips (reveal answer then verify unlock)
+const predict = await page.$('.predict');
+check('predict present', !!predict);
+// click "Показать ответ"
+const btns = await page.$$('.predict .row button');
+const labels = await Promise.all(btns.map((b) => b.evaluate((e) => e.textContent)));
+check('predict has buttons', labels.includes('Проверить'), labels.join(','));
+// wrong order attempt: click chips in displayed order
+let chips = await page.$$('.predict .pool .chip-btn');
+for (const c of chips) await c.click();
+await page.evaluate(() => { [...document.querySelectorAll('.predict .row button')].find((b) => b.textContent === 'Проверить').click(); });
+await sleep(150);
+const badOrOk = await page.$eval('.predict', (e) => e.querySelector('.callout')?.textContent ?? '');
+check('predict shows verdict', /Верно|Пока не так/.test(badOrOk), badOrOk.slice(0, 40));
+// solve properly: read answer via reveal, reset, then click in order
+await page.evaluate(() => { [...document.querySelectorAll('.predict .row button')].find((b) => b.textContent === 'Показать ответ').click(); });
+await sleep(100);
+const ans = await page.$$eval('.predict .answer-slots li', (els) => els.map((e) => e.textContent));
+await page.evaluate(() => { [...document.querySelectorAll('.predict .row button')].find((b) => b.textContent === 'Сбросить').click(); });
+await sleep(100);
+for (const a of ans) {
+  await page.evaluate((txt) => { [...document.querySelectorAll('.predict .pool .chip-btn')].find((b) => b.textContent === txt && !b.disabled).click(); }, a);
+}
+await page.evaluate(() => { [...document.querySelectorAll('.predict .row button')].find((b) => b.textContent === 'Проверить').click(); });
+await sleep(150);
+const verdict = await page.$eval('.predict', (e) => e.querySelector('.callout')?.textContent ?? '');
+check('predict correct order accepted', verdict.includes('Верно'), verdict.slice(0, 30));
+const solvedText = await page.$eval('.predict p.muted', (e) => e.textContent);
+check('predict progress counter', solvedText.includes('Решено: 1 из 5'), solvedText.slice(0, 30));
+
+// sandbox exercise 1.1b
+const sandboxes = await page.$$('.sandbox');
+check('2 sandboxes in lesson', sandboxes.length === 2, String(sandboxes.length));
+const runBtn = async (i) => page.evaluate((idx) => { const b = [...document.querySelectorAll('.sandbox')][idx].querySelector('button.primary'); b.click(); }, i);
+await runBtn(0);
+await sleep(900);
+const res1 = await page.$$eval('.sandbox', (els) => els[0].querySelector('.result pre')?.textContent);
+check('sandbox runs starter code', res1 === '1\n4\n3\n2', JSON.stringify(res1));
+// edit code: replace editor content
+const editor = (await page.$$('.sandbox .cm-content'))[0];
+await editor.click();
+await page.keyboard.down('Control'); await page.keyboard.press('KeyA'); await page.keyboard.up('Control');
+await page.evaluate((txt) => { document.execCommand('insertText', false, txt); }, "console.log('1');\nsetTimeout(() => console.log('2'), 0);\nsetTimeout(() => console.log('3'), 0);\nconsole.log('4');\n");
+await sleep(300);
+await runBtn(0);
+await sleep(900);
+const verdict2 = await page.$$eval('.sandbox', (els) => els[0].querySelector('.result')?.textContent ?? '');
+check('sandbox accepts correct solution', verdict2.includes('Верно'), verdict2.slice(-40));
+await page.screenshot({ path: (process.env.SHOT_DIR ?? '/tmp') + '/lesson-tasks.png', fullPage: true });
+
+// quiz
+await page.evaluate(() => { document.querySelector('.quiz').scrollIntoView(); });
+const opts = await page.$$('.quiz .quiz-q .opt');
+check('quiz renders options', opts.length === 24, String(opts.length));
+await page.evaluate(() => { document.querySelectorAll('.quiz-q')[0].querySelectorAll('.opt')[2].click(); });
+await sleep(100);
+const fb = await page.$eval('.quiz .feedback', (e) => e.textContent);
+check('quiz feedback correct', fb.startsWith('Верно'), fb.slice(0, 20));
+
+// theme and mobile
+await page.click('.topbar button[aria-label="Переключить тему"]');
+await sleep(150);
+check('theme toggles', ['dark', 'light'].includes(await page.evaluate(() => document.documentElement.dataset.theme)));
+await page.setViewport({ width: 390, height: 844, isMobile: true });
+await page.goto(base + '#/lesson/m01-l02', { waitUntil: 'networkidle0' });
+await sleep(400);
+const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+check('no horizontal overflow on mobile', overflow <= 1, `overflow=${overflow}`);
+await page.screenshot({ path: (process.env.SHOT_DIR ?? '/tmp') + '/mobile.png' });
+
+// soon lesson + module page + sandbox page
+await page.goto(base + '#/lesson/m03-l02', { waitUntil: 'networkidle0' });
+check('soon lesson shows stub', (await page.$eval('.callout', (e) => e.textContent)).includes('в разработке'));
+await page.goto(base + '#/module/m08', { waitUntil: 'networkidle0' });
+check('module page lists 8 lessons', (await page.$$('.lesson-list li')).length === 8);
+await page.goto(base + '#/sandbox', { waitUntil: 'networkidle0' });
+check('sandbox page', !!(await page.$('.sandbox')));
+
+console.log(results.join('\n'));
+console.log('ERRORS:', errors.length ? errors.join('\n') : 'none');
+await browser.close();
