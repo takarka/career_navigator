@@ -29,6 +29,7 @@
     "@axe-core/puppeteer": "^4.14.1",
     "@preact/preset-vite": "^2.10.6",
     "@types/node": "^26.6.6",
+    "kafkajs": "^2.2.4",
     "puppeteer-core": "^25.18.1",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",

@@ -1,0 +1,6 @@
+{
+  "name": "lab-m08-kafka-consumer-group",
+  "private": true,
+  "scripts": { "test": "node test.cjs", "test:solution": "node test.cjs solution" },
+  "dependencies": { "kafkajs": "^2.2.4" }
+}

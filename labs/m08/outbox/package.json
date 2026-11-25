@@ -1,0 +1,1 @@
+{ "name": "lab-m08-outbox", "private": true, "scripts": { "test": "NODE_NO_WARNINGS=1 node test.cjs", "test:solution": "NODE_NO_WARNINGS=1 node test.cjs solution" } }

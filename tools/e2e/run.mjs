@@ -224,9 +224,42 @@ await page.goto(base + '#/lesson/m01-l06', { waitUntil: 'networkidle0' });
 await page.waitForSelector('.shutdown .timeline svg', { timeout: 8000 });
 check('m01-l06: shutdown timeline renders', !!(await page.$('.shutdown .timeline svg')));
 
+// --- Фаза E: модуль 8 (брокеры)
+await page.goto(base + '#/lesson/m08-l02', { waitUntil: 'networkidle0' });
+await page.waitForSelector('.rabbitroute', { timeout: 8000 });
+await page.select('#ex-type', 'topic');
+await page.select('#ex-key', 'order.eu.created');
+await sleep(100);
+const hits = await page.$$eval('.rabbitroute .queues li.hit', (l) => l.length);
+check('m08-l02: topic routing hits eu-orders and audit', hits === 2, `hits=${hits}`);
+await page.waitForSelector('.rabbitsim', { timeout: 8000 });
+await page.evaluate(() => [...document.querySelectorAll('.rabbitsim button')].find((b) => b.textContent === 'Отправить сообщение').click());
+await sleep(100);
+check('m08-l02: rabbit sim shows a message in flight', (await page.$eval('.rabbitsim p[aria-live]', (e) => e.textContent)).includes('unacked'));
+await page.goto(base + '#/lesson/m08-l03', { waitUntil: 'networkidle0' });
+await page.waitForSelector('.kafkasim', { timeout: 8000 });
+for (let i = 0; i < 3; i++) await page.evaluate(() => [...document.querySelectorAll('.kafkasim button')].find((b) => b.textContent === 'Отправить сообщение').click());
+await sleep(100);
+check('m08-l03: kafka sim logged 3 produced messages', (await page.$$eval('.kafkasim .outlog li', (l) => l.filter((x) => x.textContent.includes('продюсер')).length)) === 3);
+await page.goto(base + '#/lesson/m08-l04', { waitUntil: 'networkidle0' });
+await page.waitForSelector('.delivery .timeline svg', { timeout: 8000 });
+check('m08-l04: delivery injector shows a verdict', (await page.$eval('.delivery p[aria-live]', (e) => e.textContent)).includes('Вердикт'));
+await page.goto(base + '#/lesson/m08-l05', { waitUntil: 'networkidle0' });
+await page.waitForSelector('.idem', { timeout: 8000 });
+check('m08-l05: naive approach is wrong', (await page.$eval('.idem p[aria-live]', (e) => e.textContent)).includes('неверно'));
+await page.goto(base + '#/lesson/m08-l06', { waitUntil: 'networkidle0' });
+await page.waitForSelector('.retryplan .chart svg', { timeout: 8000 });
+check('m08-l06: retry planner renders', !!(await page.$('.retryplan .chart svg')));
+await page.goto(base + '#/lesson/m08-l07', { waitUntil: 'networkidle0' });
+await page.waitForSelector('.outboxviz .timeline svg', { timeout: 8000 });
+check('m08-l07: outbox viz renders', !!(await page.$('.outboxviz .timeline svg')));
+await page.goto(base + '#/lesson/m08-l08', { waitUntil: 'networkidle0' });
+await page.waitForSelector('.sagaviz .timeline svg', { timeout: 8000 });
+check('m08-l08: saga viz renders', !!(await page.$('.sagaviz .timeline svg')));
+
 for (const w of [360, 390, 768]) {
   await page.setViewport({ width: w, height: 800 });
-  for (const hash of ['#/', '#/module/m01', '#/lesson/m01-l01', '#/lesson/m01-l02', '#/lesson/m01-l03', '#/lesson/m01-l04', '#/lesson/m01-l05', '#/lesson/m01-l06', '#/lesson/m14-l03', '#/lesson/m14-l04', '#/sandbox', '#/practice/interview', '#/demo']) {
+  for (const hash of ['#/', '#/module/m01', '#/lesson/m01-l01', '#/lesson/m01-l02', '#/lesson/m01-l03', '#/lesson/m01-l04', '#/lesson/m01-l05', '#/lesson/m01-l06', '#/lesson/m08-l01', '#/lesson/m08-l02', '#/lesson/m08-l03', '#/lesson/m08-l04', '#/lesson/m08-l05', '#/lesson/m08-l06', '#/lesson/m08-l07', '#/lesson/m08-l08', '#/lesson/m14-l03', '#/lesson/m14-l04', '#/sandbox', '#/practice/interview', '#/demo']) {
     await page.goto(base + hash, { waitUntil: 'networkidle0' });
     await sleep(250);
     const o = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -236,7 +269,7 @@ for (const w of [360, 390, 768]) {
 
 await page.setViewport({ width: 1280, height: 900 });
 for (const theme of ['light', 'dark']) {
-  for (const hash of ['#/', '#/module/m01', '#/lesson/m01-l02', '#/sandbox', '#/demo', '#/practice/interview', '#/practice/flashcards', '#/practice/star', '#/practice/intro', '#/lesson/m14-l01', '#/lesson/m14-l03', '#/lesson/m14-l04', '#/lesson/m01-l01', '#/lesson/m01-l03', '#/lesson/m01-l04', '#/lesson/m01-l05', '#/lesson/m01-l06']) {
+  for (const hash of ['#/', '#/module/m01', '#/lesson/m01-l02', '#/sandbox', '#/demo', '#/practice/interview', '#/practice/flashcards', '#/practice/star', '#/practice/intro', '#/lesson/m14-l01', '#/lesson/m14-l03', '#/lesson/m14-l04', '#/lesson/m01-l01', '#/lesson/m01-l03', '#/lesson/m01-l04', '#/lesson/m01-l05', '#/lesson/m01-l06', '#/lesson/m08-l01', '#/lesson/m08-l02', '#/lesson/m08-l03', '#/lesson/m08-l04', '#/lesson/m08-l05', '#/lesson/m08-l06', '#/lesson/m08-l07', '#/lesson/m08-l08']) {
     await page.goto(base + hash, { waitUntil: 'networkidle0' });
     await page.evaluate((t) => {
       const k = 'nodejs-textbook:v1';

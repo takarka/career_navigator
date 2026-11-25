@@ -26,6 +26,15 @@ export const widgetLoaders: Record<string, () => Promise<AnyComponent>> = {
   'emitter-sim': () => import('./EmitterSim.tsx').then((m) => m.EmitterSim),
   'backpressure-sim': () => import('./BackpressureSim.tsx').then((m) => m.BackpressureSim),
   'shutdown-timeline': () => import('./ShutdownTimeline.tsx').then((m) => m.ShutdownTimeline),
+  'sync-vs-async': () => import('./BrokerWidgets.tsx').then((m) => m.SyncVsAsync),
+  'rabbit-routing': () => import('./BrokerWidgets.tsx').then((m) => m.RabbitRouting),
+  'rabbit-sim': () => import('./BrokerWidgets.tsx').then((m) => m.RabbitSim),
+  'kafka-sim': () => import('./BrokerWidgets.tsx').then((m) => m.KafkaSim),
+  'delivery-injector': () => import('./BrokerWidgets.tsx').then((m) => m.DeliveryInjector),
+  'outbox-viz': () => import('./BrokerWidgets.tsx').then((m) => m.OutboxViz),
+  'saga-viz': () => import('./BrokerWidgets.tsx').then((m) => m.SagaViz),
+  'idempotency-compare': () => import('./BrokerWidgets.tsx').then((m) => m.IdempotencyCompare),
+  'retry-planner': () => import('./BrokerWidgets.tsx').then((m) => m.RetryPlanner),
   'test-exercise': () => import('./TestExerciseView.tsx').then((m) => m.TestExerciseView),
 };
 

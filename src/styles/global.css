@@ -342,3 +342,11 @@ input[type='range'] { max-width: 100%; }
   .zones tr { border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 8px; }
   .zones select { width: 100%; }
 }
+.queues { list-style: none; padding: 0; margin: 4px 0; }
+.queues li { padding: 3px 6px; border-radius: 6px; }
+.queues li.hit { background: var(--ok-soft); }
+.ok-text { color: var(--ok); }
+.bad-text { color: var(--bad); }
+select { max-width: 100%; }
+label:has(> select) { display: inline-flex; flex-direction: column; gap: 4px; max-width: 100%; min-width: 0; }
+.idem .chip, .chip { white-space: normal; }

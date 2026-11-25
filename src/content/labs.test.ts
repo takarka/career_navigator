@@ -34,4 +34,20 @@ describe('лаборатории', () => {
     const solution = run('m01/graceful', ['solution']);
     expect(solution.status, solution.stdout + solution.stderr).toBe(0);
   });
+
+  it('m08/saga: заготовка падает, решение проходит', { timeout: 30000 }, () => {
+    const starter = run('m08/saga');
+    expect(starter.status, starter.stdout + starter.stderr).toBe(1);
+    const solution = run('m08/saga', ['solution']);
+    expect(solution.status, solution.stdout + solution.stderr).toBe(0);
+  });
+
+  it('m08/outbox: заготовка падает, решение проходит (node:sqlite)', { timeout: 30000 }, () => {
+    const env = { ...process.env, NODE_NO_WARNINGS: '1' };
+    const go = (args: string[]) => spawnSync(process.execPath, ['test.cjs', ...args], { cwd: join(labs, 'm08/outbox'), encoding: 'utf8', env, timeout: 30000 });
+    const starter = go([]);
+    expect(starter.status, starter.stdout + starter.stderr).toBe(1);
+    const solution = go(['solution']);
+    expect(solution.status, solution.stdout + solution.stderr).toBe(0);
+  });
 });

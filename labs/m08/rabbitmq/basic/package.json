@@ -1,0 +1,6 @@
+{
+  "name": "lab-m08-rabbitmq-basic",
+  "private": true,
+  "scripts": { "test": "node test.cjs", "test:solution": "node test.cjs solution" },
+  "dependencies": { "amqplib": "^2.4.1" }
+}
