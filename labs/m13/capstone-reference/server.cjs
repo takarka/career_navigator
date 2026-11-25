@@ -2,7 +2,15 @@
 // в учебный SOAP-мок (labs/m12/soap-mock). Не NestJS и не настоящий брокер: цель — показать границы транзакции,
 // идемпотентность, ретраи и обработку Fault/таймаута. Нужен Node 22+.
 const http = require('node:http');
-const { randomUUID } = require('node:crypto');
+const { randomUUID, createHash } = require('node:crypto');
+
+// Минимальный сервер WebSocket (RFC 6455): только отправка текстовых кадров клиентам и закрытие по кадру close.
+function wsFrame(text) {
+  const payload = Buffer.from(text);
+  const n = payload.length;
+  const head = n < 126 ? Buffer.from([0x81, n]) : Buffer.from([0x81, 126, n >> 8, n & 255]);
+  return Buffer.concat([head, payload]);
+}
 const { DatabaseSync } = require('node:sqlite');
 const { getStatus, SoapFault } = require('../../m12/soap-mock/solution/client.cjs');
 
@@ -16,10 +24,13 @@ function createApp({ soapUrl, retryDelayMs = 50, timeoutMs = 500, rateLimit = 0 
     CREATE TABLE outbox (id INTEGER PRIMARY KEY AUTOINCREMENT, app_id TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, next_at INTEGER NOT NULL, done INTEGER NOT NULL DEFAULT 0);
     CREATE TABLE status_history (id INTEGER PRIMARY KEY AUTOINCREMENT, app_id TEXT NOT NULL, status TEXT NOT NULL, at INTEGER NOT NULL);
   `);
+  const sockets = new Set();
   const row = (r) => r && { id: r.id, title: r.title, payload: r.payload ? JSON.parse(r.payload) : null, status: r.status };
   const setStatus = (id, status) => {
     db.prepare('UPDATE application SET status = ? WHERE id = ?').run(status, id);
     db.prepare('INSERT INTO status_history (app_id, status, at) VALUES (?, ?, ?)').run(id, status, Date.now());
+    const msg = wsFrame(JSON.stringify({ event: 'application.status', id, status }));
+    for (const sock of sockets) sock.write(msg);
   };
 
   function createApplication(body, key) {
@@ -112,7 +123,17 @@ function createApp({ soapUrl, retryDelayMs = 50, timeoutMs = 500, rateLimit = 0 
       return send(res, 404, { error: 'not found' });
     });
   });
-  return { server, db, close: () => { clearInterval(timer); db.close(); } };
+  server.on('upgrade', (req, socket) => {
+    const key = req.headers['sec-websocket-key'];
+    if (new URL(req.url, 'http://x').pathname !== '/ws' || !key) return socket.destroy();
+    const accept = createHash('sha1').update(key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64');
+    socket.write(`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${accept}\r\n\r\n`);
+    sockets.add(socket);
+    socket.on('data', (d) => { if ((d[0] & 0x0f) === 0x8) socket.end(Buffer.from([0x88, 0])); }); // close
+    socket.on('close', () => sockets.delete(socket));
+    socket.on('error', () => sockets.delete(socket));
+  });
+  return { server, db, close: () => { clearInterval(timer); for (const x of sockets) x.destroy(); db.close(); } };
 }
 
 module.exports = { createApp, createServer: () => createApp().server };

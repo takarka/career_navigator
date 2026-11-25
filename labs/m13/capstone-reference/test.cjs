@@ -15,12 +15,20 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const waitStatus = async (id, want) => { for (let i = 0; i < 100; i++) { if ((await get(id)).status === want) return true; await sleep(30); } return false; };
 
   const problems = [];
+  // WebSocket: клиент получает событие о смене статуса
+  const events = [];
+  const ws = new WebSocket(base.replace('http', 'ws') + '/ws');
+  ws.onmessage = (e) => events.push(JSON.parse(e.data));
+  await new Promise((r) => { ws.onopen = r; ws.onerror = r; });
   const a = await post({ title: 'ok', payload: { requestId: 42 } }, 'k1');
   if (!(await waitStatus(a.id, 'ACCEPTED'))) problems.push('заявка с requestId=42 не стала ACCEPTED');
   const b = await post({ title: 'fault', payload: { requestId: 0 } }, 'k2');
   if (!(await waitStatus(b.id, 'REJECTED'))) problems.push('Fault не привёл к REJECTED');
   const c = await post({ title: 'slow', payload: { requestId: 'slow' } }, 'k3');
   if (!(await waitStatus(c.id, 'FAILED'))) problems.push('таймаут не привёл к FAILED после ретраев');
+  await sleep(100);
+  if (!events.some((e) => e.id === a.id && e.status === 'ACCEPTED')) problems.push('WebSocket не прислал событие ACCEPTED: ' + JSON.stringify(events));
+  ws.close();
   const jobs = app.db.prepare('SELECT COUNT(*) n FROM outbox WHERE done = 0').get().n;
   if (jobs !== 0) problems.push(`в outbox остались невыполненные записи: ${jobs}`);
 
@@ -50,6 +58,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   app.server.close(); app.close(); mock.closeAllConnections(); mock.close();
   if (problems.length) { problems.forEach((p) => console.log('ПРОВАЛ ' + p)); process.exit(1); }
-  console.log('OK: контракт, Outbox, Fault, таймаут, ретраи, rate limit, graceful shutdown');
+  console.log('OK: контракт, Outbox, Fault, таймаут, ретраи, rate limit, graceful shutdown, WebSocket');
   process.exit(0);
 })();

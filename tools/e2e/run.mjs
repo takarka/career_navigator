@@ -312,7 +312,8 @@ for (const w of [360, 390, 768]) {
 }
 
 await page.setViewport({ width: 1280, height: 900 });
-for (const theme of ['light', 'dark']) {
+// axe не подключается к страницам file:// («Page/Frame is not ready»): a11y проверяется на HTTP-сборке (та же разметка)
+for (const theme of base.startsWith('file:') ? [] : ['light', 'dark']) {
   for (const hash of ['#/', '#/module/m01', '#/lesson/m01-l02', '#/sandbox', '#/demo', '#/practice/interview', '#/practice/flashcards', '#/practice/star', '#/practice/intro', '#/lesson/m14-l01', '#/lesson/m14-l03', '#/lesson/m14-l04', '#/lesson/m01-l01', '#/lesson/m01-l03', '#/lesson/m01-l04', '#/lesson/m01-l05', '#/lesson/m01-l06', '#/lesson/m08-l01', '#/lesson/m08-l02', '#/lesson/m08-l03', '#/lesson/m08-l04', '#/lesson/m08-l05', '#/lesson/m08-l06', '#/lesson/m08-l07', '#/lesson/m08-l08', '#/lesson/m03-l01', '#/lesson/m03-l02', '#/lesson/m03-l04', '#/lesson/m03-l05', '#/lesson/m03-l06', '#/lesson/m03-l07', '#/lesson/m04-l01', '#/lesson/m04-l02', '#/lesson/m04-l03', '#/lesson/m04-l04', '#/lesson/m04-l05', '#/lesson/m06-l01', '#/lesson/m06-l02', '#/lesson/m06-l03', '#/lesson/m06-l04', '#/lesson/m06-l05', '#/lesson/m05-l01', '#/lesson/m05-l02', '#/lesson/m05-l03', '#/lesson/m05-l04', '#/lesson/m05-l05', '#/lesson/m10-l01', '#/lesson/m10-l02', '#/lesson/m10-l03', '#/lesson/m10-l04', '#/lesson/m00-l01', '#/lesson/m00-l02', '#/lesson/m02-l01', '#/lesson/m02-l03', '#/lesson/m07-l01', '#/lesson/m07-l03', '#/lesson/m09-l02', '#/lesson/m09-l03', '#/lesson/m11-l01', '#/lesson/m12-l02', '#/lesson/m13-l01', '#/lesson/m12-l04', '#/lesson/m12-l05', '#/lesson/m12-l06', '#/lesson/m13-l02']) {
     await page.goto(base + hash, { waitUntil: 'networkidle0' });
     await page.evaluate((t) => {
@@ -321,7 +322,11 @@ for (const theme of ['light', 'dark']) {
       st.theme = t;
       localStorage.setItem(k, JSON.stringify(st));
     }, theme);
-    await page.reload({ waitUntil: 'networkidle0' });
+    if (base.startsWith('file:')) {
+      // на file:// reload после смены хэша нестабилен: загружаем страницу заново
+      await page.goto('about:blank');
+      await page.goto(base + hash, { waitUntil: 'networkidle0' });
+    } else await page.reload({ waitUntil: 'networkidle0' });
     await sleep(300);
     const res = await new AxePuppeteer(page).analyze();
     const bad = res.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
