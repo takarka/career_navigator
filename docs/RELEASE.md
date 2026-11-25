@@ -1,5 +1,7 @@
 # Заметки о выпуске v1.0 (черновик)
 
+Состояние: ветка влита в `main` (2026-11-25), `ci`, `pages` и `oracle` на `main` зелёные, Pages включён. Тег `v1.0` на момент записи не создан: создание тега через `git push` и релиза через API возвращало ошибки GitHub (HTTP 500). Создать: `git tag v1.0 && git push origin v1.0` (сработает `release.yml`) либо запустить `release.yml` вручную с тегом `v1.0`.
+
 Тег `v*` запускает `release.yml`: он собирает `dist-single` и `dist-offline` и создаёт релиз с этими файлами (`textbook-single.html`, `textbook-offline.zip`) и этим текстом.
 
 ## Что входит
