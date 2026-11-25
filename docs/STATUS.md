@@ -21,7 +21,7 @@
 | 9. Архитектура | 5 из 5 | SOLID, монолит и сервисы, надёжность (circuit breaker с тестами), согласованность, system design |
 | 11. Тестирование | 3 из 3 | пирамида, интеграционные тесты, нестабильные тесты; упражнения spy и идемпотентный обработчик |
 | 12. Интеграции | 6 из 6 | SOAP, XML-DSig (проверено на xml-crypto), PKI/OCSP/CRL, общая модель шлюзов, чек-лист вопросов оператору, надёжность + лаборатория `soap-mock`. Фактов о ШЭП и Kalkan нет: источников не найдено (`research/m12.md`) |
-| 13. Capstone | 2 из 2 | описание, этапы, чек-листы приёмки, шаблон рассказа; заготовка `labs/m13/capstone-starter`, приёмочные тесты контракта `labs/m13/acceptance`, эталоны `labs/m13/capstone-nest` (NestJS + PGlite, Outbox, SOAP-мок, rate limit) и `labs/m13/capstone-reference` (SQLite; rate limit, graceful shutdown, WebSocket) |
+| 13. Capstone | 2 из 2 | описание, этапы, чек-листы приёмки, шаблон рассказа; заготовка `labs/m13/capstone-starter`, приёмочные тесты контракта `labs/m13/acceptance`, эталоны `labs/m13/capstone-nest` (NestJS + PGlite, Outbox, SOAP-мок, rate limit, WebSocket) и `labs/m13/capstone-reference` (SQLite; rate limit, graceful shutdown, WebSocket) |
 | 14. Подготовка | 5 из 5 | рассказ о себе, STAR, live coding (4 упражнения с тестами), зарплата, мок-интервью, карточки Лейтнера |
 
 Сводный тест модуля (12 вопросов из тестов уроков) на странице модуля, лента «слабых тем» на главной, лаборатория `labs/m04/lock` на настоящем `redis-server` (проверена здесь, Redis 7.0.15), `npm run build:offline` (папка `dist-offline` с `serve.mjs`), `npm run serve`.
@@ -76,4 +76,4 @@
 | Что | Причина |
 |---|---|
 | Модуль 12: конкретика про ШЭП и Kalkan (уроки сейчас общие) | нужен комплект разработчика НУЦ РК и документация оператора; выдумывать факты нельзя |
-| Продолжение после `v1.0` | эталон на NestJS без WebSocket, нагрузочный прогон эталонов, конкретика по ШЭП и Kalkan при появлении источников |
+| Продолжение после `v1.0` | конкретика по ШЭП и Kalkan при появлении источников |

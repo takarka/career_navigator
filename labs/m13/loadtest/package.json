@@ -1,0 +1,6 @@
+{
+  "name": "capstone-loadtest",
+  "private": true,
+  "scripts": { "test": "node run.cjs" },
+  "dependencies": { "autocannon": "^8.0.0" }
+}

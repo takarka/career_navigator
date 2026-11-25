@@ -17,9 +17,19 @@ const get = async (id: string) => (await fetch(`${base}/applications/${id}`)).js
 const wait = async (id: string, want: string) => { for (let i = 0; i < 150; i++) { if ((await get(id)).status === want) return true; await sleep(30); } return false; };
 
 const problems: string[] = [];
-if (!(await wait((await post({ title: 'ok', payload: { requestId: 42 } }, 'n1')).id, 'ACCEPTED'))) problems.push('requestId=42 не стал ACCEPTED');
+// WebSocket /ws: клиент получает событие о смене статуса
+const events: { id: string; status: string }[] = [];
+const ws = new WebSocket(base.replace('http', 'ws') + '/ws');
+ws.onmessage = (e) => events.push(JSON.parse(String(e.data)));
+await new Promise((r) => { ws.onopen = r; ws.onerror = r; });
+const first = await post({ title: 'ok', payload: { requestId: 42 } }, 'n1');
+if (!(await wait(first.id, 'ACCEPTED'))) problems.push('requestId=42 не стал ACCEPTED');
 if (!(await wait((await post({ title: 'f', payload: { requestId: 0 } }, 'n2')).id, 'REJECTED'))) problems.push('Fault не привёл к REJECTED');
 if (!(await wait((await post({ title: 's', payload: { requestId: 'slow' } }, 'n3')).id, 'FAILED'))) problems.push('таймаут не привёл к FAILED');
+
+await sleep(100);
+if (!events.some((e) => e.id === first.id && e.status === 'ACCEPTED')) problems.push('WebSocket не прислал ACCEPTED: ' + JSON.stringify(events));
+ws.close();
 
 const acc = await new Promise<{ code: number | null; out: string }>((resolve) => {
   const p = spawn(process.execPath, ['test.cjs'], { cwd: join(import.meta.dirname, '..', 'acceptance'), env: { ...process.env, BASE_URL: base } });
@@ -72,5 +82,5 @@ await app.close();
 mock.closeAllConnections();
 mock.close();
 if (problems.length) { problems.forEach((p) => console.log('ПРОВАЛ ' + p)); process.exit(1); }
-console.log(`OK: NestJS + ${process.env.DATABASE_URL ? 'PostgreSQL (pg)' : 'PGlite'}${process.env.AMQP_URL ? ' + RabbitMQ' : ''}${process.env.KAFKA_BROKERS ? ' + Kafka' : ''}: контракт, Outbox, Fault, таймаут, ретраи, rate limit`);
+console.log(`OK: NestJS + ${process.env.DATABASE_URL ? 'PostgreSQL (pg)' : 'PGlite'}${process.env.AMQP_URL ? ' + RabbitMQ' : ''}${process.env.KAFKA_BROKERS ? ' + Kafka' : ''}: контракт, Outbox, Fault, таймаут, ретраи, rate limit, WebSocket`);
 process.exit(0);

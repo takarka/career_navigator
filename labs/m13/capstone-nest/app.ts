@@ -5,7 +5,9 @@
  */
 import 'reflect-metadata';
 import { createRequire } from 'node:module';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
+import type { Server } from 'node:http';
+import type { Duplex } from 'node:stream';
 import { PGlite } from '@electric-sql/pglite';
 import {
   BadRequestException, Body, Controller, Get, Headers, HttpCode, Inject, Injectable, MiddlewareConsumer, Module, NestMiddleware, NotFoundException,
@@ -24,6 +26,14 @@ const OPTIONS = 'OPTIONS';
 const MAX_ATTEMPTS = 3;
 export const QUEUE = 'applications.submit';
 export const TOPIC = 'applications-submit';
+
+/** Минимальный WebSocket (RFC 6455): текстовые кадры сервер → клиент, закрытие по кадру close. */
+function wsFrame(text: string): Buffer {
+  const payload = Buffer.from(text);
+  const n = payload.length;
+  const head = n < 126 ? Buffer.from([0x81, n]) : Buffer.from([0x81, 126, n >> 8, n & 255]);
+  return Buffer.concat([head, payload]);
+}
 
 /** Транспорт событий: RabbitMQ (AMQP_URL) или Kafka (KAFKA_BROKERS). */
 interface Transport { publish(key: string, payload: string): Promise<void>; close(): Promise<void> }
@@ -81,6 +91,25 @@ export class ApplicationsService implements OnModuleInit, OnApplicationShutdown 
 
   private transport?: Transport;
   readonly stats = { published: 0, received: 0, duplicates: 0 };
+  private readonly sockets = new Set<Duplex>();
+
+  /** WebSocket /ws: события application.status при смене статуса заявки. */
+  attachWs(server: Server) {
+    server.on('upgrade', (req, socket) => {
+      const key = req.headers['sec-websocket-key'];
+      if (new URL(req.url ?? '/', 'http://x').pathname !== '/ws' || typeof key !== 'string') return void socket.destroy();
+      const accept = createHash('sha1').update(key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64');
+      socket.write(`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${accept}\r\n\r\n`);
+      this.sockets.add(socket);
+      socket.on('data', (d: Buffer) => { if ((d[0] & 0x0f) === 0x8) socket.end(Buffer.from([0x88, 0])); });
+      socket.on('close', () => this.sockets.delete(socket));
+      socket.on('error', () => this.sockets.delete(socket));
+    });
+  }
+  private broadcast(id: string, status: string) {
+    const msg = wsFrame(JSON.stringify({ event: 'application.status', id, status }));
+    for (const sock of this.sockets) sock.write(msg);
+  }
 
   async onModuleInit() {
     if (this.opts.amqpUrl) this.transport = await this.connectRabbit();
@@ -90,6 +119,7 @@ export class ApplicationsService implements OnModuleInit, OnApplicationShutdown 
   async onApplicationShutdown() {
     if (this.timer) clearInterval(this.timer);
     await this.transport?.close().catch(() => {});
+    for (const sock of this.sockets) sock.destroy();
   }
 
   private async connectRabbit(): Promise<Transport> {
@@ -175,12 +205,14 @@ export class ApplicationsService implements OnModuleInit, OnApplicationShutdown 
     const r = await this.db.pg.query<Record<string, unknown>>("UPDATE application SET status = 'CANCELLED' WHERE id = $1 AND status <> 'CANCELLED' RETURNING *", [id]);
     if (!r.rows[0]) throw new ConflictException('already cancelled');
     await this.db.pg.query("INSERT INTO status_history (application_id, status) VALUES ($1, 'CANCELLED')", [id]);
+    this.broadcast(id, 'CANCELLED');
     return view(r.rows[0]);
   }
 
   private async setStatus(id: string, status: string) {
     await this.db.pg.query('UPDATE application SET status = $2 WHERE id = $1', [id, status]);
     await this.db.pg.query('INSERT INTO status_history (application_id, status) VALUES ($1, $2)', [id, status]);
+    this.broadcast(id, status);
   }
 
   /** Воркер: без брокера обрабатывает outbox напрямую; с брокером публикует записи в очередь (relay). */
@@ -259,6 +291,7 @@ export async function createNestApp(opts: Options = {}) {
   const app = await NestFactory.create(AppModule, { logger: false, abortOnError: false });
   app.enableShutdownHooks();
   await app.init();
+  app.get(ApplicationsService).attachWs(app.getHttpServer());
   return app;
 }
 
