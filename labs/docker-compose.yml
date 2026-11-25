@@ -1,5 +1,6 @@
 # Общее окружение для лабораторий (модули 3, 4, 8 и далее).
-# Файл подготовлен заранее и ещё НЕ проверен запуском: его проверка входит в этап модулей 3, 4 и 8.
+# Проверено: синтаксис (docker compose config) и существование тегов образов на Docker Hub (2026-11-25).
+# НЕ проверено запуском: в среде разработки не было Docker-демона. Проверить: labs/scripts/smoke.sh
 # Запуск нужного сервиса: docker compose up -d postgres redis rabbitmq kafka
 services:
   postgres:
@@ -34,5 +35,10 @@ services:
       retries: 10
 
   kafka:
-    image: apache/kafka:latest # режим KRaft, без ZooKeeper
+    image: apache/kafka:4.4.0 # режим KRaft, без ZooKeeper; версия закреплена
     ports: ['9092:9092']
+    healthcheck:
+      test: ['CMD-SHELL', '/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1']
+      interval: 10s
+      timeout: 10s
+      retries: 12
