@@ -57,4 +57,11 @@ describe('лаборатории', () => {
     const solution = run('m10/leak', ['solution']);
     expect(solution.status, solution.stdout + solution.stderr).toBe(0);
   });
+
+  it('m12/soap-mock: заготовка падает, решение проходит', { timeout: 30000 }, () => {
+    const starter = run('m12/soap-mock');
+    expect(starter.status, starter.stdout + starter.stderr).toBe(1);
+    const solution = run('m12/soap-mock', ['solution']);
+    expect(solution.status, solution.stdout + solution.stderr).toBe(0);
+  });
 });

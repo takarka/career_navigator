@@ -77,7 +77,7 @@ export const modules: Module[] = [
   {
     id: 'm12', num: 12, title: 'Интеграции: SOAP, ШЭП, Kalkan', priority: 'high',
     summary: 'SOAP, WSDL, ЭЦП, сертификаты, интеграция с госсистемами.',
-    lessons: [L('m12', 1, 'SOAP и WSDL'), L('m12', 2, 'SOAP из Node.js'), L('m12', 3, 'ШЭП: каналы'), L('m12', 4, 'XML-DSig и CMS'), L('m12', 5, 'Kalkan и сертификаты'), L('m12', 6, 'Надёжность интеграций')],
+    lessons: [L('m12', 1, 'SOAP и WSDL'), L('m12', 2, 'XML-DSig'), L('m12', 3, 'PKI: сертификаты, OCSP, CRL'), L('m12', 4, 'Шлюзы: синхронно и асинхронно'), L('m12', 5, 'Подготовка к интеграции'), L('m12', 6, 'Надёжность интеграций')],
   },
   {
     id: 'm13', num: 13, title: 'Capstone: сквозной проект', priority: 'critical',
