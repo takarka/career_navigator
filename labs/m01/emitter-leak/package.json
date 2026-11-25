@@ -1,0 +1,5 @@
+{
+  "name": "lab-m01-emitter-leak",
+  "private": true,
+  "scripts": { "test": "node test.cjs", "test:solution": "node test.cjs solution" }
+}

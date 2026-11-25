@@ -23,6 +23,9 @@ export const widgetLoaders: Record<string, () => Promise<AnyComponent>> = {
   'threadpool-sim': () => import('./ThreadPoolSim.tsx').then((m) => m.ThreadPoolSim),
   'server-sim': () => import('./ServerSim.tsx').then((m) => m.ServerSim),
   'block-demo': () => import('./BlockDemo.tsx').then((m) => m.BlockDemo),
+  'emitter-sim': () => import('./EmitterSim.tsx').then((m) => m.EmitterSim),
+  'backpressure-sim': () => import('./BackpressureSim.tsx').then((m) => m.BackpressureSim),
+  'shutdown-timeline': () => import('./ShutdownTimeline.tsx').then((m) => m.ShutdownTimeline),
   'test-exercise': () => import('./TestExerciseView.tsx').then((m) => m.TestExerciseView),
 };
 

@@ -1,0 +1,5 @@
+{
+  "name": "lab-m01-graceful",
+  "private": true,
+  "scripts": { "test": "node test.cjs", "test:solution": "node test.cjs solution" }
+}

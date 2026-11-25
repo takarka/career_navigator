@@ -198,9 +198,35 @@ await page.goto(base + '#/lesson/m14-l03', { waitUntil: 'networkidle0' });
 await sleep(600);
 check('m14-l03: 4 live-coding test exercises', (await page.$$('.test-exercise')).length === 4);
 
+// --- Фаза D: модуль 1
+await page.goto(base + '#/lesson/m01-l01', { waitUntil: 'networkidle0' });
+await page.waitForSelector('.tpsim svg', { timeout: 8000 });
+check('m01-l01: thread pool sim renders', !!(await page.$('.tpsim svg')));
+check('m01-l01: zones game has 10 rows', (await page.$$('.zones select')).length === 10);
+await page.goto(base + '#/lesson/m01-l03', { waitUntil: 'networkidle0' });
+await page.waitForSelector('.blockdemo', { timeout: 8000 });
+const f1 = Number(await page.$eval('[data-testid=frames]', (e) => e.textContent));
+await sleep(300);
+const f2 = Number(await page.$eval('[data-testid=frames]', (e) => e.textContent));
+check('m01-l03: frame counter ticks', f2 > f1, `${f1} -> ${f2}`);
+await page.evaluate(() => [...document.querySelectorAll('.blockdemo button')].find((b) => b.textContent.includes('Web Worker')).click());
+await sleep(500);
+const f3 = Number(await page.$eval('[data-testid=frames]', (e) => e.textContent));
+check('m01-l03: counter keeps ticking while worker computes', f3 > f2, `${f2} -> ${f3}`);
+await sleep(1500);
+await page.goto(base + '#/lesson/m01-l04', { waitUntil: 'networkidle0' });
+await page.waitForSelector('.emsim', { timeout: 8000 });
+check('m01-l04: emitter sim renders', !!(await page.$('.emsim .listeners, .emsim .empty')));
+await page.goto(base + '#/lesson/m01-l05', { waitUntil: 'networkidle0' });
+await page.waitForSelector('.bpsim', { timeout: 8000 });
+check('m01-l05: backpressure sim renders', !!(await page.$('.bpsim .chart svg')));
+await page.goto(base + '#/lesson/m01-l06', { waitUntil: 'networkidle0' });
+await page.waitForSelector('.shutdown .timeline svg', { timeout: 8000 });
+check('m01-l06: shutdown timeline renders', !!(await page.$('.shutdown .timeline svg')));
+
 for (const w of [360, 390, 768]) {
   await page.setViewport({ width: w, height: 800 });
-  for (const hash of ['#/', '#/module/m01', '#/lesson/m01-l02', '#/sandbox', '#/practice/interview']) {
+  for (const hash of ['#/', '#/module/m01', '#/lesson/m01-l01', '#/lesson/m01-l02', '#/lesson/m01-l03', '#/lesson/m01-l04', '#/lesson/m01-l05', '#/lesson/m01-l06', '#/lesson/m14-l03', '#/lesson/m14-l04', '#/sandbox', '#/practice/interview', '#/demo']) {
     await page.goto(base + hash, { waitUntil: 'networkidle0' });
     await sleep(250);
     const o = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -210,7 +236,7 @@ for (const w of [360, 390, 768]) {
 
 await page.setViewport({ width: 1280, height: 900 });
 for (const theme of ['light', 'dark']) {
-  for (const hash of ['#/', '#/module/m01', '#/lesson/m01-l02', '#/sandbox', '#/demo', '#/practice/interview', '#/practice/flashcards', '#/practice/star', '#/practice/intro', '#/lesson/m14-l01', '#/lesson/m14-l03', '#/lesson/m14-l04']) {
+  for (const hash of ['#/', '#/module/m01', '#/lesson/m01-l02', '#/sandbox', '#/demo', '#/practice/interview', '#/practice/flashcards', '#/practice/star', '#/practice/intro', '#/lesson/m14-l01', '#/lesson/m14-l03', '#/lesson/m14-l04', '#/lesson/m01-l01', '#/lesson/m01-l03', '#/lesson/m01-l04', '#/lesson/m01-l05', '#/lesson/m01-l06']) {
     await page.goto(base + hash, { waitUntil: 'networkidle0' });
     await page.evaluate((t) => {
       const k = 'nodejs-textbook:v1';

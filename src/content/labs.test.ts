@@ -13,4 +13,25 @@ describe('лаборатории', () => {
     const solution = run('m01/blocking', ['solution']);
     expect(solution.status, solution.stdout + solution.stderr).toBe(0);
   });
+
+  it('m01/emitter-leak: заготовка падает, решение проходит', { retry: 2, timeout: 60000 }, () => {
+    const starter = run('m01/emitter-leak');
+    expect(starter.status, starter.stdout + starter.stderr).toBe(1);
+    const solution = run('m01/emitter-leak', ['solution']);
+    expect(solution.status, solution.stdout + solution.stderr).toBe(0);
+  });
+
+  it('m01/streams: заготовка падает по памяти, решение проходит', { retry: 1, timeout: 90000 }, () => {
+    const starter = run('m01/streams');
+    expect(starter.status, starter.stdout + starter.stderr).toBe(1);
+    const solution = run('m01/streams', ['solution']);
+    expect(solution.status, solution.stdout + solution.stderr).toBe(0);
+  });
+
+  it('m01/graceful: заготовка падает, решение проходит', { retry: 2, timeout: 60000 }, () => {
+    const starter = run('m01/graceful');
+    expect(starter.status, starter.stdout + starter.stderr).toBe(1);
+    const solution = run('m01/graceful', ['solution']);
+    expect(solution.status, solution.stdout + solution.stderr).toBe(0);
+  });
 });
