@@ -1,0 +1,43 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Тесты (оракул event loop сверяется с реальным Node)
+        run: npm test
+      - name: Сборка dist (tsc --noEmit + vite build)
+        run: npm run build
+      - name: Сборка dist-single
+        run: npm run build:single
+      - name: e2e на dist
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: |
+          npx vite preview --port 4173 &
+          npx --yes wait-on http://localhost:4173/ --timeout 30000
+          npm run e2e
+      - name: e2e на dist-single (file://)
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+          BASE_URL: file://${{ github.workspace }}/dist-single/index.html
+        run: npm run e2e
