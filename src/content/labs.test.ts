@@ -50,4 +50,11 @@ describe('лаборатории', () => {
     const solution = go(['solution']);
     expect(solution.status, solution.stdout + solution.stderr).toBe(0);
   });
+
+  it('m10/leak: заготовка падает по памяти, решение проходит', { timeout: 90000 }, () => {
+    const starter = run('m10/leak');
+    expect(starter.status, starter.stdout + starter.stderr).toBe(1);
+    const solution = run('m10/leak', ['solution']);
+    expect(solution.status, solution.stdout + solution.stderr).toBe(0);
+  });
 });

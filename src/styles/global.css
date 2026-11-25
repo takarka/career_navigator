@@ -375,3 +375,4 @@ label:has(> select) { display: inline-flex; flex-direction: column; gap: 4px; ma
 .nest-order li.bad { color: var(--bad); }
 .nest-order li.hand { color: var(--ok); }
 .nestmod { border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; background: var(--surface); }
+.flame-scroll { overflow-x: auto; max-width: 100%; position: relative; }

@@ -16,7 +16,8 @@
     "check:size": "node tools/check-size.mjs dist",
     "record:traces": "tsx tools/record-traces.ts",
     "bank": "tsx tools/build-question-bank.ts",
-    "gen:labs:m03": "tsx tools/gen-labs-m03.ts"
+    "gen:labs:m03": "tsx tools/gen-labs-m03.ts",
+    "gen:profile": "tsx tools/gen-sample-profile.ts"
   },
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.5",

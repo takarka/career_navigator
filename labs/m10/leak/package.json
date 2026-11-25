@@ -1,0 +1,1 @@
+{ "name": "lab-m10-leak", "private": true, "scripts": { "test": "node test.cjs", "test:solution": "node test.cjs solution" } }

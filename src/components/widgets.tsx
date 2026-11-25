@@ -49,6 +49,8 @@ export const widgetLoaders: Record<string, () => Promise<AnyComponent>> = {
   'match-game': () => import('./MatchGame.tsx').then((m) => m.MatchGame),
   'idemkey-demo': () => import('./RestWidgets.tsx').then((m) => m.IdemKeyDemo),
   'jwt-playground': () => import('./RestWidgets.tsx').then((m) => m.JwtPlayground),
+  'flame-graph': () => import('./PerfWidgets.tsx').then((m) => m.FlameGraph),
+  'queue-curve': () => import('./PerfWidgets.tsx').then((m) => m.QueueCurve),
   'test-exercise': () => import('./TestExerciseView.tsx').then((m) => m.TestExerciseView),
 };
 
