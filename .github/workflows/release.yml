@@ -4,6 +4,12 @@ name: release
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Тег релиза (создаётся на текущем коммите ветки, если его нет)'
+        required: true
+        default: 'v1.0'
 
 permissions:
   contents: write
@@ -29,4 +35,5 @@ jobs:
       - name: Релиз
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "${GITHUB_REF_NAME}" release/textbook-single.html release/textbook-offline.zip --title "${GITHUB_REF_NAME}" --notes-file docs/RELEASE.md
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: gh release create "$TAG" release/textbook-single.html release/textbook-offline.zip --title "$TAG" --notes-file docs/RELEASE.md --target "$GITHUB_SHA"
