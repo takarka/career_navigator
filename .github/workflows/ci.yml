@@ -25,8 +25,12 @@ jobs:
       - run: npm ci
       - name: Тесты (оракул event loop сверяется с реальным Node)
         run: npm test
+      - name: Линтер контента
+        run: npm run lint:content
       - name: Сборка dist (tsc --noEmit + vite build)
         run: npm run build
+      - name: Бюджет размера стартового JS
+        run: npm run check:size
       - name: Сборка dist-single
         run: npm run build:single
       - name: e2e на dist

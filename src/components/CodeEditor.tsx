@@ -1,8 +1,5 @@
-import { useEffect, useRef } from 'preact/hooks';
-import { EditorView, basicSetup } from 'codemirror';
-import { EditorState } from '@codemirror/state';
-import { javascript } from '@codemirror/lang-javascript';
-import { oneDark } from '@codemirror/theme-one-dark';
+import { useEffect, useState } from 'preact/hooks';
+import type { ComponentType } from 'preact';
 
 interface Props {
   value: string;
@@ -12,35 +9,29 @@ interface Props {
   minHeight?: string;
 }
 
-export function CodeEditor({ value, onChange, readOnly, dark, minHeight }: Props) {
-  const host = useRef<HTMLDivElement>(null);
-  const view = useRef<EditorView | null>(null);
+let impl: ComponentType<Props> | null = null;
+let loading: Promise<void> | null = null;
 
+function load(): Promise<void> {
+  loading ??= import('./CodeEditorImpl.tsx').then((m) => {
+    impl = m.CodeEditorImpl;
+  });
+  return loading;
+}
+
+/** Обёртка: CodeMirror грузится отдельным чанком при первом показе редактора. */
+export function CodeEditor(props: Props) {
+  const [, force] = useState(0);
   useEffect(() => {
-    const extensions = [
-      basicSetup,
-      javascript(),
-      EditorView.lineWrapping,
-      EditorState.readOnly.of(!!readOnly),
-      EditorView.editable.of(!readOnly),
-      EditorView.updateListener.of((u) => {
-        if (u.docChanged) onChange?.(u.state.doc.toString());
-      }),
-      ...(dark ? [oneDark] : []),
-    ];
-    const v = new EditorView({ state: EditorState.create({ doc: value, extensions }), parent: host.current! });
-    view.current = v;
-    return () => v.destroy();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dark, readOnly]);
-
-  // внешнее изменение значения (смена сценария)
-  useEffect(() => {
-    const v = view.current;
-    if (v && v.state.doc.toString() !== value) {
-      v.dispatch({ changes: { from: 0, to: v.state.doc.length, insert: value } });
-    }
-  }, [value]);
-
-  return <div class="code-editor" ref={host} style={minHeight ? { minHeight } : undefined} />;
+    if (!impl) void load().then(() => force((n) => n + 1));
+  }, []);
+  const Impl = impl;
+  if (!Impl) {
+    return (
+      <pre class="code-editor" style={props.minHeight ? { minHeight: props.minHeight } : undefined} aria-busy="true">
+        {props.value}
+      </pre>
+    );
+  }
+  return <Impl {...props} />;
 }

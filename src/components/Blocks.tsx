@@ -2,7 +2,7 @@ import type { Block } from '../content/types.ts';
 import { Markdown } from './Markdown.tsx';
 import { Quiz } from './Quiz.tsx';
 import { TaskCard } from './TaskCard.tsx';
-import { widgets } from './widgets.tsx';
+import { LazyWidget } from './widgets.tsx';
 
 const calloutIcon = { info: 'ℹ️', warn: '⚠️', tip: '💡' } as const;
 
@@ -25,11 +25,10 @@ export function BlockView({ block }: { block: Block }) {
         </details>
       );
     case 'widget': {
-      const W = widgets[block.name];
       return (
         <figure class="widget">
           {block.model && <span class="badge model">модель</span>}
-          {W ? <W {...(block.props ?? {})} /> : <p>Виджет «{block.name}» не найден.</p>}
+          <LazyWidget name={block.name} props={block.props} />
           {block.caption && <figcaption>{block.caption}</figcaption>}
         </figure>
       );

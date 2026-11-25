@@ -11,7 +11,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "gen:labs": "tsx tools/gen-labs.ts",
-    "e2e": "node tools/e2e/run.mjs"
+    "e2e": "node tools/e2e/run.mjs",
+    "lint:content": "tsx tools/lint-content.ts",
+    "check:size": "node tools/check-size.mjs dist"
   },
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.5",

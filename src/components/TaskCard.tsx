@@ -3,7 +3,7 @@ import type { Mode, Task } from '../content/types.ts';
 import { Markdown } from './Markdown.tsx';
 import { Sandbox } from './Sandbox.tsx';
 import { toggle, useProgress } from '../app/state.ts';
-import { widgets } from './widgets.tsx';
+import { LazyWidget } from './widgets.tsx';
 
 export const modeInfo: Record<Mode, { icon: string; label: string; hint: string }> = {
   browser: { icon: '🌐', label: 'В браузере', hint: 'Выполняется прямо на этой странице' },
@@ -36,7 +36,6 @@ export function TaskCard({ task }: { task: Task }) {
   const [hints, setHints] = useState(0);
   const m = modeInfo[task.mode];
   const done = !!progress.tasks[task.id];
-  const Widget = task.widget ? widgets[task.widget.name] : undefined;
 
   return (
     <section class={`task ${done ? 'done' : ''}`}>
@@ -61,7 +60,7 @@ export function TaskCard({ task }: { task: Task }) {
       {task.expected && (
         <div class="expected"><div class="pane-title">Что должно получиться</div><Markdown text={task.expected} /></div>
       )}
-      {Widget && <Widget {...(task.widget!.props ?? {})} taskId={task.id} />}
+      {task.widget && <LazyWidget name={task.widget.name} props={{ ...(task.widget.props ?? {}), taskId: task.id }} />}
       {task.exercise && <Sandbox exercise={task.exercise} taskId={task.id} />}
       {task.hints && task.hints.length > 0 && (
         <div class="hints">
