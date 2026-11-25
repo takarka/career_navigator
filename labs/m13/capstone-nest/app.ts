@@ -19,10 +19,15 @@ const { getStatus, SoapFault } = require_('../../m12/soap-mock/solution/client.c
   SoapFault: new (...a: never[]) => Error;
 };
 
-export interface Options { soapUrl?: string; rateLimit?: number; retryDelayMs?: number; timeoutMs?: number; amqpUrl?: string }
+export interface Options { soapUrl?: string; rateLimit?: number; retryDelayMs?: number; timeoutMs?: number; amqpUrl?: string; kafkaBrokers?: string }
 const OPTIONS = 'OPTIONS';
 const MAX_ATTEMPTS = 3;
 export const QUEUE = 'applications.submit';
+export const TOPIC = 'applications-submit';
+
+/** Транспорт событий: RabbitMQ (AMQP_URL) или Kafka (KAFKA_BROKERS). */
+interface Transport { publish(key: string, payload: string): Promise<void>; close(): Promise<void> }
+interface KafkaLike { admin(): { connect(): Promise<void>; createTopics(o: object): Promise<unknown>; disconnect(): Promise<void> }; producer(): { connect(): Promise<void>; send(o: object): Promise<unknown>; disconnect(): Promise<void> }; consumer(o: object): { connect(): Promise<void>; subscribe(o: object): Promise<void>; run(o: object): Promise<void>; disconnect(): Promise<void> } }
 
 interface AmqpChannel { assertQueue(q: string, o: object): Promise<unknown>; sendToQueue(q: string, b: Buffer, o?: object): boolean; consume(q: string, cb: (m: { content: Buffer } | null) => void): Promise<unknown>; ack(m: unknown): void; prefetch(n: number): Promise<unknown>; waitForConfirms(): Promise<void>; close(): Promise<void> }
 interface AmqpConn { createConfirmChannel(): Promise<AmqpChannel>; close(): Promise<void> }
@@ -74,39 +79,59 @@ export class ApplicationsService implements OnModuleInit, OnApplicationShutdown 
   private busy = false;
   constructor(@Inject(Db) private readonly db: Db, @Inject(OPTIONS) private readonly opts: Options) {}
 
-  private conn?: AmqpConn;
-  private ch?: AmqpChannel;
+  private transport?: Transport;
   readonly stats = { published: 0, received: 0, duplicates: 0 };
 
   async onModuleInit() {
-    if (this.opts.amqpUrl) await this.connectBroker();
+    if (this.opts.amqpUrl) this.transport = await this.connectRabbit();
+    else if (this.opts.kafkaBrokers) this.transport = await this.connectKafka();
     if (this.opts.soapUrl) { this.timer = setInterval(() => void this.tick(), 20); this.timer.unref(); }
   }
   async onApplicationShutdown() {
     if (this.timer) clearInterval(this.timer);
-    await this.ch?.close().catch(() => {});
-    await this.conn?.close().catch(() => {});
+    await this.transport?.close().catch(() => {});
   }
 
-  private async connectBroker() {
+  private async connectRabbit(): Promise<Transport> {
     const amqp = (await import(/* @vite-ignore */ 'amqplib')) as unknown as { default: { connect: (u: string) => Promise<AmqpConn> } };
-    this.conn = await amqp.default.connect(this.opts.amqpUrl!);
-    this.ch = await this.conn.createConfirmChannel();
-    await this.ch.assertQueue(QUEUE, { durable: true });
-    await this.ch.prefetch(1);
-    await this.ch.consume(QUEUE, (m) => { if (m) void this.onMessage(m); });
+    const conn = await amqp.default.connect(this.opts.amqpUrl!);
+    const ch = await conn.createConfirmChannel();
+    await ch.assertQueue(QUEUE, { durable: true });
+    await ch.prefetch(1);
+    await ch.consume(QUEUE, (m) => { if (m) void this.handle(m.content.toString()).then(() => ch.ack(m), () => {}); });
+    return {
+      publish: async (_key, payload) => { ch.sendToQueue(QUEUE, Buffer.from(payload), { persistent: true }); await ch.waitForConfirms(); },
+      close: async () => { await ch.close(); await conn.close(); },
+    };
   }
 
-  /** Потребитель: сначала запись в inbox (повторная доставка отбрасывается), затем обработка и подтверждение. */
-  private async onMessage(m: { content: Buffer }) {
-    const msg = JSON.parse(m.content.toString()) as { messageId: string; jobId: number };
+  /** Kafka: ключ сообщения = идентификатор заявки (порядок событий одной заявки), consumer group, смещение фиксируется после обработки. */
+  private async connectKafka(): Promise<Transport> {
+    const { Kafka, logLevel } = (await import(/* @vite-ignore */ 'kafkajs')) as unknown as { Kafka: new (o: object) => KafkaLike; logLevel: { NOTHING: number } };
+    const kafka = new Kafka({ clientId: 'capstone', brokers: this.opts.kafkaBrokers!.split(','), logLevel: logLevel.NOTHING });
+    const admin = kafka.admin();
+    await admin.connect();
+    await admin.createTopics({ waitForLeaders: true, topics: [{ topic: TOPIC, numPartitions: 3 }] });
+    await admin.disconnect();
+    const producer = kafka.producer();
+    await producer.connect();
+    const consumer = kafka.consumer({ groupId: 'capstone-workers' });
+    await consumer.connect();
+    await consumer.subscribe({ topic: TOPIC, fromBeginning: true });
+    await consumer.run({ eachMessage: async ({ message }: { message: { value: Buffer | null } }) => { await this.handle(message.value!.toString()); } });
+    return {
+      publish: async (key, payload) => { await producer.send({ topic: TOPIC, messages: [{ key, value: payload }], acks: -1 }); },
+      close: async () => { await consumer.disconnect(); await producer.disconnect(); },
+    };
+  }
+
+  /** Потребитель: сначала запись в inbox (повторная доставка отбрасывается), затем обработка. Ошибка → сообщение не подтверждается. */
+  async handle(raw: string) {
+    const msg = JSON.parse(raw) as { messageId: string; jobId: number };
     this.stats.received++;
-    try {
-      const ins = await this.db.pg.query('INSERT INTO inbox (message_id) VALUES ($1) ON CONFLICT DO NOTHING RETURNING message_id', [msg.messageId]);
-      if (ins.rows.length === 0) this.stats.duplicates++;
-      else await this.processJob(msg.jobId);
-      this.ch!.ack(m);
-    } catch { /* сообщение останется неподтверждённым и вернётся при переподключении */ }
+    const ins = await this.db.pg.query('INSERT INTO inbox (message_id) VALUES ($1) ON CONFLICT DO NOTHING RETURNING message_id', [msg.messageId]);
+    if (ins.rows.length === 0) this.stats.duplicates++;
+    else await this.processJob(msg.jobId);
   }
 
   async create(body: { title?: unknown; payload?: unknown }, key?: string) {
@@ -166,10 +191,9 @@ export class ApplicationsService implements OnModuleInit, OnApplicationShutdown 
       const j = await this.db.pg.query<{ id: number }>('SELECT id FROM outbox WHERE done = false AND published = false AND next_at <= now() ORDER BY id LIMIT 1');
       const job = j.rows[0];
       if (!job) return;
-      if (!this.ch) return void (await this.processJob(job.id));
-      const attempts = (await this.db.pg.query<{ attempts: number }>('SELECT attempts FROM outbox WHERE id = $1', [job.id])).rows[0].attempts;
-      this.ch.sendToQueue(QUEUE, Buffer.from(JSON.stringify({ messageId: `${job.id}:${attempts}`, jobId: job.id })), { persistent: true });
-      await this.ch.waitForConfirms(); // публикация подтверждена брокером
+      if (!this.transport) return void (await this.processJob(job.id));
+      const row = (await this.db.pg.query<{ attempts: number; application_id: string }>('SELECT attempts, application_id FROM outbox WHERE id = $1', [job.id])).rows[0];
+      await this.transport.publish(row.application_id, JSON.stringify({ messageId: `${job.id}:${row.attempts}`, jobId: job.id })); // публикация подтверждена брокером
       await this.db.pg.query('UPDATE outbox SET published = true WHERE id = $1', [job.id]);
       this.stats.published++;
     } finally { this.busy = false; }
@@ -239,7 +263,7 @@ export async function createNestApp(opts: Options = {}) {
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const app = await createNestApp({ soapUrl: process.env.SOAP_URL, amqpUrl: process.env.AMQP_URL, rateLimit: Number(process.env.RATE_LIMIT ?? 0) });
+  const app = await createNestApp({ soapUrl: process.env.SOAP_URL, amqpUrl: process.env.AMQP_URL, kafkaBrokers: process.env.KAFKA_BROKERS, rateLimit: Number(process.env.RATE_LIMIT ?? 0) });
   await app.listen(Number(process.env.PORT ?? 3000), '127.0.0.1');
   console.log('listening');
 }

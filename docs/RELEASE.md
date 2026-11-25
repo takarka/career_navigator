@@ -11,7 +11,7 @@
 ## Известные ограничения
 - Проверено запуском на Docker 29: `labs/docker-compose.yml` (smoke), лаборатории RabbitMQ и Kafka, оракул изоляции на PostgreSQL 17, примеры Dockerfile и compose. На GitHub Actions выполнены `ci.yml` и `oracle.yml` (успешно); `pages.yml` срабатывает при пуше в `main`.
 - Нет фактов о ШЭП и Kalkan: уроки модуля 12 общие, источники не найдены (`docs/research/m12.md`).
-- Эталоны capstone: `capstone-nest` (NestJS; PGlite или настоящий PostgreSQL 17 через `DATABASE_URL`, без WebSocket) и `capstone-reference` (SQLite, с WebSocket). `capstone-nest` проверен на PostgreSQL 17 и RabbitMQ 4 (Outbox → очередь → потребитель с inbox).
+- Эталоны capstone: `capstone-nest` (NestJS; PGlite или настоящий PostgreSQL 17 через `DATABASE_URL`, без WebSocket) и `capstone-reference` (SQLite, с WebSocket). `capstone-nest` проверен на PostgreSQL 17 с RabbitMQ 4 и отдельно с Kafka 4.4 (Outbox → брокер → потребитель с inbox).
 - Открытые вопросы: `docs/open-questions.md`.
 
 ## Чек-лист перед тегом
