@@ -42,6 +42,11 @@ export const widgetLoaders: Record<string, () => Promise<AnyComponent>> = {
   'redis-terminal': () => import('./RedisWidgets.tsx').then((m) => m.RedisTerminal),
   'ratelimit-sim': () => import('./RedisWidgets.tsx').then((m) => m.RateLimitSim),
   'cache-sim': () => import('./RedisWidgets.tsx').then((m) => m.CacheSim),
+  'nest-lifecycle': () => import('./NestWidgets.tsx').then((m) => m.NestLifecycleSim),
+  'nest-di': () => import('./NestWidgets.tsx').then((m) => m.NestDiViz),
+  'dto-pipe': () => import('./NestWidgets.tsx').then((m) => m.DtoPipeDemo),
+  'env-check': () => import('./NestWidgets.tsx').then((m) => m.EnvCheck),
+  'match-game': () => import('./MatchGame.tsx').then((m) => m.MatchGame),
   'test-exercise': () => import('./TestExerciseView.tsx').then((m) => m.TestExerciseView),
 };
 

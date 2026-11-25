@@ -368,3 +368,10 @@ label:has(> select) { display: inline-flex; flex-direction: column; gap: 4px; ma
 .rl { display: inline-block; width: 12px; height: 18px; border-radius: 2px; }
 .rl.ok { background: var(--ok); }
 .rl.no { background: var(--bad); }
+.nest-toggle { border: 1px solid var(--border); border-radius: 8px; padding: 4px 10px; }
+.nest-toggle label { display: block; }
+.nest-order { padding-left: 24px; }
+.nest-order li { padding: 3px 0; }
+.nest-order li.bad { color: var(--bad); }
+.nest-order li.hand { color: var(--ok); }
+.nestmod { border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; background: var(--surface); }
