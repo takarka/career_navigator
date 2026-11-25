@@ -11,5 +11,5 @@ export default defineConfig({
   resolve: single ? { alias: { '@electric-sql/pglite': new URL('./src/engine/pglite-stub.ts', import.meta.url).pathname } } : undefined,
   plugins: [preact(), ...(single ? [viteSingleFile()] : [])],
   build: { target: 'es2022', outDir: single ? 'dist-single' : 'dist' },
-  test: { environment: 'node', include: ['src/**/*.test.ts'] },
+  test: { environment: 'node', include: ['src/**/*.test.ts'], fileParallelism: false },
 } as never);
