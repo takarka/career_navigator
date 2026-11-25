@@ -96,4 +96,9 @@ describe('лаборатории', () => {
     server.close();
     expect(out.code, out.text).toBe(0);
   });
+
+  it('m13: эталон на NestJS + PGlite проходит приёмку, Outbox, Fault, таймаут, rate limit', { timeout: 120000 }, () => {
+    const r = spawnSync('npx', ['tsx', '--tsconfig', 'labs/m13/capstone-nest/tsconfig.json', 'labs/m13/capstone-nest/test.ts'], { cwd: join(labs, '..'), encoding: 'utf8', timeout: 120000, env: { ...process.env, NODE_NO_WARNINGS: '1' } });
+    expect(r.status, r.stdout + r.stderr).toBe(0);
+  });
 });
