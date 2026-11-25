@@ -2,14 +2,14 @@
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
-import { createNestApp } from './app.ts';
+import { ApplicationsService, QUEUE, createNestApp } from './app.ts';
 
 const require_ = createRequire(import.meta.url);
 const { start } = require_('../../m12/soap-mock/mock.cjs') as { start: (p: number) => Promise<import('node:http').Server> };
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const mock = await start(0);
-const app = await createNestApp({ soapUrl: `http://127.0.0.1:${(mock.address() as { port: number }).port}/`, retryDelayMs: 20, timeoutMs: 200 });
+const app = await createNestApp({ soapUrl: `http://127.0.0.1:${(mock.address() as { port: number }).port}/`, retryDelayMs: 20, timeoutMs: 200, amqpUrl: process.env.AMQP_URL });
 await app.listen(0, '127.0.0.1');
 const base = `http://127.0.0.1:${new URL(await app.getUrl()).port}`;
 const post = async (body: unknown, key: string) => (await fetch(base + '/applications', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': key }, body: JSON.stringify(body) })).json() as Promise<{ id: string }>;
@@ -32,6 +32,22 @@ if (acc.code !== 0) problems.push('приёмка контракта не про
 // приложение для проверки лимита всегда на PGlite, чтобы не пересоздавать таблицы основного приложения
 const savedUrl = process.env.DATABASE_URL;
 delete process.env.DATABASE_URL;
+// брокер (если задан AMQP_URL): события прошли через RabbitMQ, повторная доставка отбрасывается inbox
+if (process.env.AMQP_URL) {
+  const svc = app.get(ApplicationsService);
+  if (svc.stats.published < 3) problems.push(`через брокер опубликовано ${svc.stats.published} сообщений (ожидалось не менее 3)`);
+  const before = { ...svc.stats };
+  const done = (await (svc as unknown as { db: { pg: { query: (q: string) => Promise<{ rows: { id: number; attempts: number }[] }> } } }).db.pg.query('SELECT id, attempts FROM outbox WHERE done = true ORDER BY id LIMIT 1')).rows[0];
+  const amqp = (await import('amqplib')) as unknown as { default: { connect: (u: string) => Promise<{ createChannel: () => Promise<{ sendToQueue: (q: string, b: Buffer) => boolean; close: () => Promise<void> }>; close: () => Promise<void> }> } };
+  const c = await amqp.default.connect(process.env.AMQP_URL);
+  const ch = await c.createChannel();
+  const dup = Buffer.from(JSON.stringify({ messageId: `${done.id}:0`, jobId: done.id }));
+  ch.sendToQueue(QUEUE, dup); ch.sendToQueue(QUEUE, dup);
+  await sleep(500);
+  await ch.close(); await c.close();
+  if (svc.stats.duplicates < before.duplicates + 1) problems.push('повторная доставка не отброшена inbox: ' + JSON.stringify({ before, after: svc.stats }));
+}
+
 const lim = await createNestApp({ rateLimit: 5 });
 if (savedUrl) process.env.DATABASE_URL = savedUrl;
 await lim.listen(0, '127.0.0.1');
@@ -45,5 +61,5 @@ await app.close();
 mock.closeAllConnections();
 mock.close();
 if (problems.length) { problems.forEach((p) => console.log('ПРОВАЛ ' + p)); process.exit(1); }
-console.log(`OK: NestJS + ${process.env.DATABASE_URL ? 'PostgreSQL (pg)' : 'PGlite'}: контракт, Outbox, Fault, таймаут, ретраи, rate limit`);
+console.log(`OK: NestJS + ${process.env.DATABASE_URL ? 'PostgreSQL (pg)' : 'PGlite'}${process.env.AMQP_URL ? ' + RabbitMQ' : ''}: контракт, Outbox, Fault, таймаут, ретраи, rate limit`);
 process.exit(0);

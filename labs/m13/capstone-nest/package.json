@@ -2,6 +2,11 @@
   "name": "capstone-nest",
   "private": true,
   "type": "module",
-  "scripts": { "test": "tsx --tsconfig tsconfig.json test.ts" },
-  "optionalDependencies": { "pg": "^8.13.0" }
+  "scripts": {
+    "test": "tsx --tsconfig tsconfig.json test.ts"
+  },
+  "optionalDependencies": {
+    "pg": "^8.13.0",
+    "amqplib": "2.4.1"
+  }
 }

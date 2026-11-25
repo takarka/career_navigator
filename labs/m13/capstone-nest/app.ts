@@ -19,9 +19,13 @@ const { getStatus, SoapFault } = require_('../../m12/soap-mock/solution/client.c
   SoapFault: new (...a: never[]) => Error;
 };
 
-export interface Options { soapUrl?: string; rateLimit?: number; retryDelayMs?: number; timeoutMs?: number }
+export interface Options { soapUrl?: string; rateLimit?: number; retryDelayMs?: number; timeoutMs?: number; amqpUrl?: string }
 const OPTIONS = 'OPTIONS';
 const MAX_ATTEMPTS = 3;
+export const QUEUE = 'applications.submit';
+
+interface AmqpChannel { assertQueue(q: string, o: object): Promise<unknown>; sendToQueue(q: string, b: Buffer, o?: object): boolean; consume(q: string, cb: (m: { content: Buffer } | null) => void): Promise<unknown>; ack(m: unknown): void; prefetch(n: number): Promise<unknown>; waitForConfirms(): Promise<void>; close(): Promise<void> }
+interface AmqpConn { createConfirmChannel(): Promise<AmqpChannel>; close(): Promise<void> }
 
 type Row = Record<string, unknown>;
 interface Q { query<T = Row>(sql: string, params?: unknown[]): Promise<{ rows: T[] }> }
@@ -52,9 +56,10 @@ export class Db implements OnModuleInit, OnApplicationShutdown {
   async onModuleInit() {
     this.pg = await openDatabase();
     await this.pg.exec(`
-      DROP TABLE IF EXISTS status_history, outbox, application;
+      DROP TABLE IF EXISTS status_history, inbox, outbox, application;
       CREATE TABLE application (seq bigserial PRIMARY KEY, id uuid UNIQUE NOT NULL, title text NOT NULL, payload jsonb, status text NOT NULL DEFAULT 'NEW', idempotency_key text UNIQUE);
-      CREATE TABLE outbox (id bigserial PRIMARY KEY, application_id uuid NOT NULL, attempts int NOT NULL DEFAULT 0, next_at timestamptz NOT NULL DEFAULT now(), done boolean NOT NULL DEFAULT false);
+      CREATE TABLE outbox (id bigserial PRIMARY KEY, application_id uuid NOT NULL, attempts int NOT NULL DEFAULT 0, next_at timestamptz NOT NULL DEFAULT now(), done boolean NOT NULL DEFAULT false, published boolean NOT NULL DEFAULT false);
+      CREATE TABLE inbox (message_id text PRIMARY KEY, processed_at timestamptz NOT NULL DEFAULT now());
       CREATE TABLE status_history (id bigserial PRIMARY KEY, application_id uuid NOT NULL, status text NOT NULL, at timestamptz NOT NULL DEFAULT now());
     `);
   }
@@ -69,10 +74,40 @@ export class ApplicationsService implements OnModuleInit, OnApplicationShutdown 
   private busy = false;
   constructor(@Inject(Db) private readonly db: Db, @Inject(OPTIONS) private readonly opts: Options) {}
 
-  onModuleInit() {
+  private conn?: AmqpConn;
+  private ch?: AmqpChannel;
+  readonly stats = { published: 0, received: 0, duplicates: 0 };
+
+  async onModuleInit() {
+    if (this.opts.amqpUrl) await this.connectBroker();
     if (this.opts.soapUrl) { this.timer = setInterval(() => void this.tick(), 20); this.timer.unref(); }
   }
-  onApplicationShutdown() { if (this.timer) clearInterval(this.timer); }
+  async onApplicationShutdown() {
+    if (this.timer) clearInterval(this.timer);
+    await this.ch?.close().catch(() => {});
+    await this.conn?.close().catch(() => {});
+  }
+
+  private async connectBroker() {
+    const amqp = (await import(/* @vite-ignore */ 'amqplib')) as unknown as { default: { connect: (u: string) => Promise<AmqpConn> } };
+    this.conn = await amqp.default.connect(this.opts.amqpUrl!);
+    this.ch = await this.conn.createConfirmChannel();
+    await this.ch.assertQueue(QUEUE, { durable: true });
+    await this.ch.prefetch(1);
+    await this.ch.consume(QUEUE, (m) => { if (m) void this.onMessage(m); });
+  }
+
+  /** Потребитель: сначала запись в inbox (повторная доставка отбрасывается), затем обработка и подтверждение. */
+  private async onMessage(m: { content: Buffer }) {
+    const msg = JSON.parse(m.content.toString()) as { messageId: string; jobId: number };
+    this.stats.received++;
+    try {
+      const ins = await this.db.pg.query('INSERT INTO inbox (message_id) VALUES ($1) ON CONFLICT DO NOTHING RETURNING message_id', [msg.messageId]);
+      if (ins.rows.length === 0) this.stats.duplicates++;
+      else await this.processJob(msg.jobId);
+      this.ch!.ack(m);
+    } catch { /* сообщение останется неподтверждённым и вернётся при переподключении */ }
+  }
 
   async create(body: { title?: unknown; payload?: unknown }, key?: string) {
     if (typeof body?.title !== 'string' || !body.title) throw new BadRequestException('title must be a non-empty string');
@@ -123,26 +158,39 @@ export class ApplicationsService implements OnModuleInit, OnApplicationShutdown 
     await this.db.pg.query('INSERT INTO status_history (application_id, status) VALUES ($1, $2)', [id, status]);
   }
 
+  /** Воркер: без брокера обрабатывает outbox напрямую; с брокером публикует записи в очередь (relay). */
   async tick() {
     if (this.busy) return;
     this.busy = true;
     try {
-      const j = await this.db.pg.query<{ id: number; application_id: string; attempts: number }>('SELECT * FROM outbox WHERE done = false AND next_at <= now() ORDER BY id LIMIT 1');
+      const j = await this.db.pg.query<{ id: number }>('SELECT id FROM outbox WHERE done = false AND published = false AND next_at <= now() ORDER BY id LIMIT 1');
       const job = j.rows[0];
       if (!job) return;
-      const a = (await this.db.pg.query<{ status: string; payload: { requestId?: unknown } | null }>('SELECT status, payload FROM application WHERE id = $1', [job.application_id])).rows[0];
-      const done = () => this.db.pg.query('UPDATE outbox SET done = true WHERE id = $1', [job.id]);
-      if (a.status === 'CANCELLED') return void (await done());
-      try {
-        const r = await getStatus(this.opts.soapUrl!, String(a.payload?.requestId ?? 42), this.opts.timeoutMs ?? 500);
-        await this.setStatus(job.application_id, r.status === 'accepted' ? 'ACCEPTED' : 'SUBMITTED');
-        await done();
-      } catch (e) {
-        if (e instanceof SoapFault) { await this.setStatus(job.application_id, 'REJECTED'); await done(); }
-        else if (job.attempts + 1 >= MAX_ATTEMPTS) { await this.setStatus(job.application_id, 'FAILED'); await done(); }
-        else await this.db.pg.query('UPDATE outbox SET attempts = attempts + 1, next_at = now() + ($2 || \' milliseconds\')::interval WHERE id = $1', [job.id, String((this.opts.retryDelayMs ?? 50) * 2 ** job.attempts)]);
-      }
+      if (!this.ch) return void (await this.processJob(job.id));
+      const attempts = (await this.db.pg.query<{ attempts: number }>('SELECT attempts FROM outbox WHERE id = $1', [job.id])).rows[0].attempts;
+      this.ch.sendToQueue(QUEUE, Buffer.from(JSON.stringify({ messageId: `${job.id}:${attempts}`, jobId: job.id })), { persistent: true });
+      await this.ch.waitForConfirms(); // публикация подтверждена брокером
+      await this.db.pg.query('UPDATE outbox SET published = true WHERE id = $1', [job.id]);
+      this.stats.published++;
     } finally { this.busy = false; }
+  }
+
+  async processJob(jobId: number) {
+    const j = await this.db.pg.query<{ id: number; application_id: string; attempts: number }>('SELECT * FROM outbox WHERE id = $1 AND done = false', [jobId]);
+    const job = j.rows[0];
+    if (!job) return;
+    const a = (await this.db.pg.query<{ status: string; payload: { requestId?: unknown } | null }>('SELECT status, payload FROM application WHERE id = $1', [job.application_id])).rows[0];
+    const done = () => this.db.pg.query('UPDATE outbox SET done = true WHERE id = $1', [job.id]);
+    if (a.status === 'CANCELLED') return void (await done());
+    try {
+      const r = await getStatus(this.opts.soapUrl!, String(a.payload?.requestId ?? 42), this.opts.timeoutMs ?? 500);
+      await this.setStatus(job.application_id, r.status === 'accepted' ? 'ACCEPTED' : 'SUBMITTED');
+      await done();
+    } catch (e) {
+      if (e instanceof SoapFault) { await this.setStatus(job.application_id, 'REJECTED'); await done(); }
+      else if (job.attempts + 1 >= MAX_ATTEMPTS) { await this.setStatus(job.application_id, 'FAILED'); await done(); }
+      else await this.db.pg.query("UPDATE outbox SET attempts = attempts + 1, published = false, next_at = now() + ($2 || ' milliseconds')::interval WHERE id = $1", [job.id, String((this.opts.retryDelayMs ?? 50) * 2 ** job.attempts)]);
+    }
   }
 }
 
@@ -191,7 +239,7 @@ export async function createNestApp(opts: Options = {}) {
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const app = await createNestApp({ soapUrl: process.env.SOAP_URL, rateLimit: Number(process.env.RATE_LIMIT ?? 0) });
+  const app = await createNestApp({ soapUrl: process.env.SOAP_URL, amqpUrl: process.env.AMQP_URL, rateLimit: Number(process.env.RATE_LIMIT ?? 0) });
   await app.listen(Number(process.env.PORT ?? 3000), '127.0.0.1');
   console.log('listening');
 }
