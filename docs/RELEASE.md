@@ -1,6 +1,6 @@
 # Заметки о выпуске v1.0 (черновик)
 
-Состояние: ветка влита в `main` (2026-11-25), `ci`, `pages` и `oracle` на `main` зелёные, Pages включён. Тег `v1.0` на момент записи не создан: создание тега через `git push` и релиза через API возвращало ошибки GitHub (HTTP 500). Создать: `git tag v1.0 && git push origin v1.0` (сработает `release.yml`) либо запустить `release.yml` вручную с тегом `v1.0`.
+Выпущено 2026-11-25: релиз `v1.0` (тег на `12f8579`) с файлами `textbook-single.html` и `textbook-offline.zip`, собран `release.yml`. Тег `git push` создать не удалось (обрыв соединения), он создан запуском `release.yml` вручную; из-за сбоев GitHub (HTTP 500/502) потребовалось несколько попыток.
 
 Тег `v*` запускает `release.yml`: он собирает `dist-single` и `dist-offline` и создаёт релиз с этими файлами (`textbook-single.html`, `textbook-offline.zip`) и этим текстом.
 
@@ -21,4 +21,4 @@
 - [x] Зелёные ci.yml и oracle.yml (ветка, 2026-11-25)
 - [x] Зелёный pages.yml (после слияния в `main`, 2026-11-25)
 - [x] Сборки `dist-single` и `dist-offline` прикрепляет `release.yml`
-- [ ] Просмотрен `open-questions.md`
+- [x] Просмотрен `open-questions.md` (остались осознанные пункты: ШЭП и Kalkan, интеграции Zod и OpenAPI, нагрузочный прогон эталонов)
