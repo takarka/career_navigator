@@ -29,7 +29,11 @@ const acc = await new Promise<{ code: number | null; out: string }>((resolve) =>
 });
 if (acc.code !== 0) problems.push('приёмка контракта не прошла:\n' + acc.out);
 
+// приложение для проверки лимита всегда на PGlite, чтобы не пересоздавать таблицы основного приложения
+const savedUrl = process.env.DATABASE_URL;
+delete process.env.DATABASE_URL;
 const lim = await createNestApp({ rateLimit: 5 });
+if (savedUrl) process.env.DATABASE_URL = savedUrl;
 await lim.listen(0, '127.0.0.1');
 const limBase = `http://127.0.0.1:${new URL(await lim.getUrl()).port}`;
 const codes: number[] = [];
@@ -41,5 +45,5 @@ await app.close();
 mock.closeAllConnections();
 mock.close();
 if (problems.length) { problems.forEach((p) => console.log('ПРОВАЛ ' + p)); process.exit(1); }
-console.log('OK: NestJS + PGlite: контракт, Outbox, Fault, таймаут, ретраи, rate limit');
+console.log(`OK: NestJS + ${process.env.DATABASE_URL ? 'PostgreSQL (pg)' : 'PGlite'}: контракт, Outbox, Fault, таймаут, ретраи, rate limit`);
 process.exit(0);

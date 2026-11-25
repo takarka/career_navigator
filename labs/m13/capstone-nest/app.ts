@@ -23,11 +23,36 @@ export interface Options { soapUrl?: string; rateLimit?: number; retryDelayMs?: 
 const OPTIONS = 'OPTIONS';
 const MAX_ATTEMPTS = 3;
 
+type Row = Record<string, unknown>;
+interface Q { query<T = Row>(sql: string, params?: unknown[]): Promise<{ rows: T[] }> }
+interface Database extends Q { exec(sql: string): Promise<unknown>; transaction<T>(fn: (tx: Q) => Promise<T>): Promise<T>; close(): Promise<void> }
+
+/** PGlite по умолчанию; при DATABASE_URL — настоящий PostgreSQL через драйвер pg (npm install в этой папке). */
+async function openDatabase(): Promise<Database> {
+  const url = process.env.DATABASE_URL;
+  if (!url) return new PGlite() as unknown as Database;
+  const { default: pg } = (await import(/* @vite-ignore */ 'pg')) as { default: { Pool: new (o: { connectionString: string }) => { query: Q['query']; connect: () => Promise<{ query: Q['query']; release: () => void }>; end: () => Promise<void> } } };
+  const pool = new pg.Pool({ connectionString: url });
+  return {
+    query: (sql, params) => pool.query(sql, params),
+    exec: async (sql) => { await pool.query(sql); },
+    async transaction(fn) {
+      const c = await pool.connect();
+      try { await c.query('BEGIN'); const r = await fn({ query: (q, p) => c.query(q, p) }); await c.query('COMMIT'); return r; }
+      catch (e) { await c.query('ROLLBACK').catch(() => {}); throw e; }
+      finally { c.release(); }
+    },
+    close: () => pool.end(),
+  };
+}
+
 @Injectable()
 export class Db implements OnModuleInit, OnApplicationShutdown {
-  readonly pg = new PGlite();
+  pg!: Database;
   async onModuleInit() {
+    this.pg = await openDatabase();
     await this.pg.exec(`
+      DROP TABLE IF EXISTS status_history, outbox, application;
       CREATE TABLE application (seq bigserial PRIMARY KEY, id uuid UNIQUE NOT NULL, title text NOT NULL, payload jsonb, status text NOT NULL DEFAULT 'NEW', idempotency_key text UNIQUE);
       CREATE TABLE outbox (id bigserial PRIMARY KEY, application_id uuid NOT NULL, attempts int NOT NULL DEFAULT 0, next_at timestamptz NOT NULL DEFAULT now(), done boolean NOT NULL DEFAULT false);
       CREATE TABLE status_history (id bigserial PRIMARY KEY, application_id uuid NOT NULL, status text NOT NULL, at timestamptz NOT NULL DEFAULT now());
