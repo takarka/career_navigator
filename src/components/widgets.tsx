@@ -12,6 +12,8 @@ export const widgetLoaders: Record<string, () => Promise<AnyComponent>> = {
   'event-loop-sim': () => import('./EventLoopSim.tsx').then((m) => m.EventLoopSim),
   'predict-output': () => import('./PredictGame.tsx').then((m) => m.PredictGame),
   sandbox: () => import('./Sandbox.tsx').then((m) => m.Sandbox),
+  'demo-page': () => import('../app/demo.tsx').then((m) => m.DemoPage),
+  'test-exercise': () => import('./TestExerciseView.tsx').then((m) => m.TestExerciseView),
 };
 
 const cache = new Map<string, AnyComponent>();

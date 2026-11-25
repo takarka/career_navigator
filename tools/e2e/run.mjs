@@ -143,6 +143,24 @@ check('search finds lesson', (await page.$$('.hits li')).length >= 1);
 await page.goto(base + '#/search/' + encodeURIComponent('zzzнетакого'), { waitUntil: 'networkidle0' });
 check('search empty state', (await page.$('.hits')) === null);
 
+// --- Фаза B: демо общих компонентов
+await page.goto(base + '#/demo', { waitUntil: 'networkidle0' });
+await sleep(600);
+check('demo: timeline renders', !!(await page.$('.timeline svg')));
+const evBefore = (await page.$$('.timeline svg rect[stroke-width]')).length;
+await page.evaluate(() => document.querySelector('.timeline button[aria-label="Шаг вперёд"]').click());
+await sleep(100);
+check('demo: timeline step reveals events', (await page.$$('.timeline svg rect[stroke-width]')).length > evBefore);
+check('demo: charts render', (await page.$$('.chart svg')).length === 2);
+await page.evaluate(() => document.querySelector('.diagram g[role=button][aria-label^="PostgreSQL"]').dispatchEvent(new MouseEvent('click', { bubbles: true })));
+await sleep(100);
+const downs = await page.$$eval('.diagram g[role=button]', (gs) => gs.filter((g) => g.getAttribute('aria-label').includes('не работает')).length);
+check('demo: failing db cascades', downs >= 3, `down nodes=${downs}`);
+await page.evaluate(() => [...document.querySelectorAll('.test-exercise button')].find((b) => b.textContent.includes('Запустить тесты')).click());
+await sleep(1200);
+const starterRes = await page.$eval('.test-exercise .result', (e) => e.textContent).catch(() => '');
+check('demo: starter code fails tests', starterRes.includes('Пройдено 0 из 3'), starterRes.slice(0, 40));
+
 for (const w of [360, 390, 768]) {
   await page.setViewport({ width: w, height: 800 });
   for (const hash of ['#/', '#/module/m01', '#/lesson/m01-l02', '#/sandbox']) {
@@ -155,7 +173,7 @@ for (const w of [360, 390, 768]) {
 
 await page.setViewport({ width: 1280, height: 900 });
 for (const theme of ['light', 'dark']) {
-  for (const hash of ['#/', '#/module/m01', '#/lesson/m01-l02', '#/sandbox']) {
+  for (const hash of ['#/', '#/module/m01', '#/lesson/m01-l02', '#/sandbox', '#/demo']) {
     await page.goto(base + hash, { waitUntil: 'networkidle0' });
     await page.evaluate((t) => {
       const k = 'nodejs-textbook:v1';

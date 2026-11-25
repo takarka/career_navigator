@@ -62,6 +62,7 @@ export function TaskCard({ task }: { task: Task }) {
       )}
       {task.widget && <LazyWidget name={task.widget.name} props={{ ...(task.widget.props ?? {}), taskId: task.id }} />}
       {task.exercise && <Sandbox exercise={task.exercise} taskId={task.id} />}
+      {task.testExercise && <LazyWidget name="test-exercise" props={{ ex: task.testExercise, taskId: task.id }} />}
       {task.hints && task.hints.length > 0 && (
         <div class="hints">
           {task.hints.slice(0, hints).map((h, i) => <div class="hint" key={i}>💡 <Markdown text={h} inline /></div>)}

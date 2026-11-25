@@ -5,6 +5,7 @@ export type Route =
   | { name: 'module'; id: string }
   | { name: 'lesson'; id: string }
   | { name: 'sandbox' }
+  | { name: 'demo' }
   | { name: 'search'; q: string };
 
 export function parse(hash: string): Route {
@@ -12,6 +13,7 @@ export function parse(hash: string): Route {
   if (parts[0] === 'module' && parts[1]) return { name: 'module', id: parts[1] };
   if (parts[0] === 'lesson' && parts[1]) return { name: 'lesson', id: parts[1] };
   if (parts[0] === 'sandbox') return { name: 'sandbox' };
+  if (parts[0] === 'demo') return { name: 'demo' };
   if (parts[0] === 'search') {
     let q = parts[1] ?? '';
     try {
@@ -42,5 +44,6 @@ export const href = {
   module: (id: string) => `#/module/${id}`,
   lesson: (id: string) => `#/lesson/${id}`,
   sandbox: () => '#/sandbox',
+  demo: () => '#/demo',
   search: (q: string) => `#/search/${encodeURIComponent(q)}`,
 };

@@ -9,6 +9,14 @@ export interface Exercise {
   solution?: string;
 }
 
+/** Упражнение «напиши функцию»: тесты запускаются в Worker (см. engine/testharness.ts). */
+export interface TestExercise {
+  starter: string;
+  tests: { name: string; code: string }[];
+  timeoutMs?: number;
+  solution?: string;
+}
+
 export interface CommandItem {
   cmd: string;
   note?: string;
@@ -27,6 +35,7 @@ export interface Task {
   check?: string[];
   widget?: { name: string; props?: Record<string, unknown> };
   exercise?: Exercise;
+  testExercise?: TestExercise;
 }
 
 export interface QuizQuestion {

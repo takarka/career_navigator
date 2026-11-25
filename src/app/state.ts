@@ -1,18 +1,10 @@
 import { useEffect, useState } from 'preact/hooks';
 
-export interface Progress {
-  lessons: Record<string, true>;
-  tasks: Record<string, true>;
-  predict: Record<string, true>;
-  quizzes: Record<string, { score: number; total: number }>;
-  notes: Record<string, string>;
-  theme: 'auto' | 'light' | 'dark';
-  /** false — режим «Коротко»: блоки md с detail скрыты. */
-  detail: boolean;
-}
+import { emptyProgress, migrate, type Progress } from './migrate.ts';
+
+export type { Progress };
 
 const KEY = 'nodejs-textbook:v1';
-const empty = (): Progress => ({ lessons: {}, tasks: {}, predict: {}, quizzes: {}, notes: {}, theme: 'auto', detail: true });
 
 let memory: string | null = null;
 function read(): string | null {
@@ -33,11 +25,11 @@ function write(v: string) {
 
 function load(): Progress {
   const raw = read();
-  if (!raw) return empty();
+  if (!raw) return emptyProgress();
   try {
-    return { ...empty(), ...JSON.parse(raw) };
+    return migrate(JSON.parse(raw));
   } catch {
-    return empty();
+    return emptyProgress();
   }
 }
 
@@ -75,8 +67,9 @@ export function exportProgress(): string {
 export function importProgress(json: string): boolean {
   try {
     const parsed = JSON.parse(json);
-    if (typeof parsed !== 'object' || parsed === null) return false;
-    update((p) => Object.assign(p, empty(), parsed));
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return false;
+    const next = migrate(parsed);
+    update((p) => Object.assign(p, next));
     return true;
   } catch {
     return false;

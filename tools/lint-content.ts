@@ -39,6 +39,10 @@ function checkTask(where: string, t: Task) {
     if (!t.exercise.expected?.length) err(where, `задача ${t.id}: у exercise нет expected`);
     if ((t.hints?.length ?? 0) < 2) err(where, `задача ${t.id}: у exercise нужно минимум 2 подсказки`);
   }
+  if (t.testExercise) {
+    if (!t.testExercise.tests.length) err(where, `задача ${t.id}: у testExercise нет тестов`);
+    if ((t.hints?.length ?? 0) < 2) err(where, `задача ${t.id}: у testExercise нужно минимум 2 подсказки`);
+  }
   if (t.widget && !widgetLoaders[t.widget.name]) err(where, `задача ${t.id}: виджет «${t.widget.name}» не зарегистрирован`);
 }
 
@@ -49,7 +53,7 @@ for (const [id, lesson] of Object.entries(lessons)) {
 
   const blocks = lesson.blocks;
   const widgetsN = blocks.filter((b) => b.t === 'widget').length;
-  const sandboxTasks = blocks.filter((b) => b.t === 'task' && (b.task.exercise || b.task.widget?.name === 'sandbox')).length;
+  const sandboxTasks = blocks.filter((b) => b.t === 'task' && (b.task.exercise || b.task.testExercise || b.task.widget?.name === 'sandbox')).length;
   if (widgetsN + sandboxTasks < 1) err(where, 'нужен минимум один widget или sandbox-задача');
   if (blocks.filter((b) => b.t === 'interview').length < 2) err(where, 'нужно минимум 2 блока interview');
   if (!blocks.some((b) => b.t === 'task')) err(where, 'нужна минимум одна task');

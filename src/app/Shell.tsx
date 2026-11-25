@@ -4,6 +4,7 @@ import { lessons } from '../content/lessons.ts';
 import { cycleTheme, useDark } from './theme.ts';
 import { useProgress } from './state.ts';
 import { href, useRoute } from './router.ts';
+import { LazyWidget } from '../components/widgets.tsx';
 import { Home, LessonPage, ModulePage, SandboxPage, SearchPage } from './pages.tsx';
 import { findLessonRef } from '../content/modules.ts';
 
@@ -55,6 +56,7 @@ export function Shell() {
           {route.name === 'module' && <ModulePage id={route.id} />}
           {route.name === 'lesson' && <LessonPage id={route.id} key={route.id} />}
           {route.name === 'sandbox' && <SandboxPage />}
+          {route.name === 'demo' && <LazyWidget name="demo-page" />}
           {route.name === 'search' && <SearchPage q={route.q} key={route.q} />}
         </main>
       </div>
