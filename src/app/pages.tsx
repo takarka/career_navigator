@@ -6,11 +6,17 @@ import { BlockView } from '../components/Blocks.tsx';
 import { Sandbox } from '../components/Sandbox.tsx';
 import { modeInfo } from '../components/TaskCard.tsx';
 import { LazyWidget } from '../components/widgets.tsx';
+import { Quiz } from '../components/Quiz.tsx';
+import { buildSummary } from '../content/summary.ts';
+import { loadAllLessons } from '../content/lessons.ts';
+import type { QuizQuestion } from '../content/types.ts';
 import { Toc } from '../components/Toc.tsx';
 import { Notes } from '../components/Notes.tsx';
 import { exportProgress, importProgress, setDetail, toggle, useProgress } from './state.ts';
 import { ensureIndex, search } from './search.ts';
 import { href } from './router.ts';
+import { weakModules } from '../engine/interview.ts';
+import type { Question } from '../engine/interview.ts';
 
 function moduleStats(id: string, progress: ReturnType<typeof useProgress>) {
   const m = modules.find((x) => x.id === id)!;
@@ -23,6 +29,12 @@ export function Home() {
   const progress = useProgress();
   const file = useRef<HTMLInputElement>(null);
   const all = flatLessons();
+  const [bank, setBank] = useState<Question[]>([]);
+  const needBank = progress.interviewHistory.length > 0;
+  useEffect(() => {
+    if (needBank) import('../content/bank.ts').then((m) => m.getBank()).then(setBank, () => {});
+  }, [needBank]);
+  const weak = weakModules(progress, bank).slice(0, 4);
   const readyCount = all.filter((x) => isReady(x.ref.id)).length;
   const doneCount = all.filter((x) => progress.lessons[x.ref.id]).length;
 
@@ -52,6 +64,18 @@ export function Home() {
           <a class="btn" href={href.sandbox()}>JS-песочница</a>
         </div>
       </section>
+      {weak.length > 0 && (
+        <section class="weak-topics">
+          <h2>Слабые темы</h2>
+          <p class="muted">По результатам тестов, самооценки и мок-интервью. Начни с них.</p>
+          <ul class="lesson-list">
+            {weak.map((id) => {
+              const m = modules.find((x) => x.id === id);
+              return m ? <li key={id}><a href={href.module(id)}>{m.num}. {m.title}</a></li> : null;
+            })}
+          </ul>
+        </section>
+      )}
       <section>
         <h2>Модули</h2>
         <div class="grid">
@@ -92,6 +116,26 @@ export function Home() {
   );
 }
 
+function ModuleSummary({ id }: { id: string }) {
+  const [qs, setQs] = useState<QuizQuestion[] | null>(null);
+  const [run, setRun] = useState(0);
+  const start = async () => {
+    const m = modules.find((x) => x.id === id)!;
+    const ids = new Set(m.lessons.map((l) => l.id));
+    const all = await loadAllLessons();
+    setQs(buildSummary(all.filter((l) => ids.has(l.id)), 12, Date.now() % 100000));
+    setRun((r) => r + 1);
+  };
+  return (
+    <section class="module-summary">
+      <h2>Сводный тест модуля</h2>
+      <p class="muted">12 вопросов из тестов уроков модуля. Результат влияет на «слабые темы».</p>
+      {qs ? <Quiz key={run} id={`${id}-summary`} title="Сводный тест" questions={qs} /> : null}
+      <button onClick={start}>{qs ? 'Другой набор вопросов' : 'Начать'}</button>
+    </section>
+  );
+}
+
 export function ModulePage({ id }: { id: string }) {
   const progress = useProgress();
   const m = modules.find((x) => x.id === id);
@@ -115,6 +159,7 @@ export function ModulePage({ id }: { id: string }) {
           );
         })}
       </ol>
+      <ModuleSummary id={id} />
     </div>
   );
 }

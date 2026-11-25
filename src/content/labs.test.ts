@@ -64,4 +64,30 @@ describe('лаборатории', () => {
     const solution = run('m12/soap-mock', ['solution']);
     expect(solution.status, solution.stdout + solution.stderr).toBe(0);
   });
+
+  const hasRedis = spawnSync('redis-server', ['--version']).status === 0;
+  it.skipIf(!hasRedis)('m04/lock: заготовка падает, решение проходит (настоящий redis-server)', { timeout: 60000 }, () => {
+    const starter = run('m04/lock');
+    expect(starter.status, starter.stdout + starter.stderr).toBe(1);
+    const solution = run('m04/lock', ['solution']);
+    expect(solution.status, solution.stdout + solution.stderr).toBe(0);
+  });
+
+  it('m13: приёмочные тесты проходят на эталоне контракта', { timeout: 60000 }, async () => {
+    const { createRequire } = await import('node:module');
+    const req = createRequire(import.meta.url);
+    const { createServer } = req(join(labs, 'm13/capstone-reference/server.cjs'));
+    const server = createServer();
+    await new Promise<void>((r) => server.listen(0, '127.0.0.1', () => r()));
+    const port = (server.address() as { port: number }).port;
+    const { spawn } = await import('node:child_process');
+    const out = await new Promise<{ code: number | null; text: string }>((resolve) => {
+      const p = spawn(process.execPath, ['test.cjs'], { cwd: join(labs, 'm13/acceptance'), env: { ...process.env, BASE_URL: `http://127.0.0.1:${port}` } });
+      let text = '';
+      p.stdout.on('data', (d) => (text += d));
+      p.on('close', (code) => resolve({ code, text }));
+    });
+    server.close();
+    expect(out.code, out.text).toBe(0);
+  });
 });

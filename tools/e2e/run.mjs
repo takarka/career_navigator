@@ -115,6 +115,10 @@ await page.screenshot({ path: (process.env.SHOT_DIR ?? '/tmp') + '/mobile.png' }
 await page.goto(base + '#/lesson/m12-l04', { waitUntil: 'networkidle0' });
 check('last lessons are ready (no stub)', !(await page.$eval('main', (e) => e.textContent)).includes('в разработке'));
 await page.goto(base + '#/module/m08', { waitUntil: 'networkidle0' });
+await page.evaluate(() => [...document.querySelectorAll('.module-summary button')].find((b) => b.textContent === 'Начать')?.click());
+await sleep(500);
+check('module summary quiz has 12 questions', (await page.$$('.module-summary .quiz-q')).length === 12);
+await page.goto(base + '#/module/m08', { waitUntil: 'networkidle0' });
 check('module page lists 8 lessons', (await page.$$('.lesson-list li')).length === 8);
 await page.goto(base + '#/sandbox', { waitUntil: 'networkidle0' });
 check('sandbox page', !!(await page.$('.sandbox')));
