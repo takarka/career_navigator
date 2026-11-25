@@ -44,8 +44,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const lim = createApp({ rateLimit: 5 });
   await new Promise((r) => lim.server.listen(0, '127.0.0.1', r));
   const codes = [];
-  for (let i = 0; i < 7; i++) codes.push((await fetch(`http://127.0.0.1:${lim.server.address().port}/applications`)).status);
-  if (!codes.slice(5).includes(429)) problems.push('rate limit не вернул 429: ' + codes.join(','));
+  // окно фиксированное (1 с): 12 быстрых запросов при пороге 5 дают 429 даже если их разделит граница секунды
+  for (let i = 0; i < 12; i++) codes.push((await fetch(`http://127.0.0.1:${lim.server.address().port}/applications`)).status);
+  if (!codes.includes(429)) problems.push('rate limit не вернул 429: ' + codes.join(','));
   lim.server.close(); lim.close();
 
   // graceful shutdown: SIGTERM -> процесс завершается с кодом 0

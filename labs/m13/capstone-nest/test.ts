@@ -63,8 +63,9 @@ if (savedUrl) process.env.DATABASE_URL = savedUrl;
 await lim.listen(0, '127.0.0.1');
 const limBase = `http://127.0.0.1:${new URL(await lim.getUrl()).port}`;
 const codes: number[] = [];
-for (let i = 0; i < 7; i++) codes.push((await fetch(limBase + '/applications')).status);
-if (!codes.slice(5).includes(429)) problems.push('rate limit не вернул 429: ' + codes.join(','));
+// окно фиксированное (1 с): 12 быстрых запросов при пороге 5 дают 429 даже если их разделит граница секунды
+for (let i = 0; i < 12; i++) codes.push((await fetch(limBase + '/applications')).status);
+if (!codes.includes(429)) problems.push('rate limit не вернул 429: ' + codes.join(','));
 await lim.close();
 
 await app.close();
