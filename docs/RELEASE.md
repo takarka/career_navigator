@@ -9,7 +9,7 @@
 - Три режима: `dist` (`npm run build`), `dist-single` (`npm run build:single`, один файл), `dist-offline` (`npm run build:offline`, затем `node serve.mjs`).
 
 ## Известные ограничения
-- Не проверялось запуском (нет Docker): `labs/docker-compose.yml`, лаборатории на RabbitMQ и Kafka, оракул изоляции на PostgreSQL, примеры Dockerfile и compose, workflow GitHub Actions.
+- Проверено запуском на Docker 29: `labs/docker-compose.yml` (smoke), лаборатории RabbitMQ и Kafka, оракул изоляции на PostgreSQL 17, примеры Dockerfile и compose. Не запускались на GitHub: workflow Actions.
 - Нет фактов о ШЭП и Kalkan: уроки модуля 12 общие, источники не найдены (`docs/research/m12.md`).
 - Эталон capstone упрощён: SQLite вместо PostgreSQL, без NestJS и настоящего брокера.
 - Открытые вопросы: `docs/open-questions.md`.

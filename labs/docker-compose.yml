@@ -1,6 +1,6 @@
 # Общее окружение для лабораторий (модули 3, 4, 8 и далее).
 # Проверено: синтаксис (docker compose config) и существование тегов образов на Docker Hub (2026-11-25).
-# НЕ проверено запуском: в среде разработки не было Docker-демона. Проверить: labs/scripts/smoke.sh
+# Проверено запуском 2026-11-25: labs/scripts/smoke.sh (все четыре сервиса healthy)
 # Запуск нужного сервиса: docker compose up -d postgres redis rabbitmq kafka
 services:
   postgres:

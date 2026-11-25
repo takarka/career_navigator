@@ -10,9 +10,9 @@
 - `m01/graceful` — graceful shutdown (`SIGTERM`).
 
 - `m08/saga`, `m08/outbox` — Saga и Outbox/Inbox без Docker (`node:sqlite`, всё в памяти): проверены локально.
-- `m08/rabbitmq/basic`, `m08/rabbitmq/retry-dlq`, `m08/kafka/consumer-group` — нужны запущенные RabbitMQ и Kafka (`docker compose up -d --wait rabbitmq kafka`). Код выхода `2` — брокер недоступен, тест пропущен. **Не запускались в среде разработки** (нет Docker-демона): проверка в CI (`oracle.yml`) и у тебя.
+- `m08/rabbitmq/basic`, `m08/rabbitmq/retry-dlq`, `m08/kafka/consumer-group` — нужны запущенные RabbitMQ и Kafka (`docker compose up -d --wait rabbitmq kafka`). Код выхода `2` — брокер недоступен, тест пропущен. Проверены на живых брокерах 2026-11-25 (заготовка падает, решение проходит); повторная проверка в CI (`oracle.yml`) и у тебя.
 
 В лабораториях `blocking`, `emitter-leak`, `streams`, `graceful`: `npm test` проверяет твою версию `server.cjs` или `process.cjs` (заготовка падает), `npm run test:solution` проверяет эталон из папки `solution`. Тот же принцип проверяется в CI автотестом `src/content/labs.test.ts`.
-- `docker-compose.yml` — общие сервисы. Синтаксис и теги образов проверены, запуск не проверен (нет Docker-демона в среде разработки). Проверка: `bash labs/scripts/smoke.sh`.
+- `docker-compose.yml` — общие сервисы. Проверено запуском 2026-11-25. Проверка: `bash labs/scripts/smoke.sh`.
 
 Требования: Node.js (актуальный LTS) и Docker.

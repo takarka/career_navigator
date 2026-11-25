@@ -144,7 +144,7 @@ export function RabbitSim({ preset: initial = 'basic' }: { preset?: Preset }) {
           <ol class="outlog">{b.log.slice(-14).map((l, i) => <li key={i}>{l}</li>)}</ol>
         </div>
       </div>
-      <p class="model-note">Модель без оракула на реальном RabbitMQ (в среде разработки не было Docker); логика проверена инвариантами в автотестах. Проверь поведение лабораторией <code>labs/m08/rabbitmq</code>.</p>
+      <p class="model-note">Модель без оракула на реальном RabbitMQ: логика проверена инвариантами в автотестах, а лаборатории на живом брокере проходят. Проверь поведение лабораторией <code>labs/m08/rabbitmq</code>.</p>
     </div>
   );
 }

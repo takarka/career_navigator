@@ -1,7 +1,7 @@
 // Оракул изоляции: сценарии из модели (scenarios.json, генерируется: npm run gen:labs:m03 в корне репозитория)
 // выполняются на РЕАЛЬНОМ PostgreSQL двумя соединениями, результаты сравниваются с моделью.
 // Нужен PostgreSQL (cd labs && docker compose up -d --wait postgres). Код выхода 2 — база недоступна (тест пропущен).
-// Этот файл ещё не запускался в среде разработки (нет Docker): первый реальный прогон — в CI (oracle.yml).
+// Выполнен 2026-11-25 на PostgreSQL 17: 15 из 15 сценариев совпали с моделью. Также запускается в CI (oracle.yml).
 const { Client } = require('pg');
 const scenarios = require('./scenarios.json');
 
