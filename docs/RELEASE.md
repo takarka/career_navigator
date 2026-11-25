@@ -15,7 +15,7 @@
 - Открытые вопросы: `docs/open-questions.md`.
 
 ## Чек-лист перед тегом
-- [ ] Выполнены `bash labs/scripts/smoke.sh` и `bash labs/scripts/run-broker-labs.sh`
+- [x] Выполнены `bash labs/scripts/smoke.sh` и `bash labs/scripts/run-broker-labs.sh` (2026-11-25, и на GitHub в oracle.yml)
 - [x] Зелёные ci.yml и oracle.yml (ветка, 2026-11-25)
 - [ ] Зелёный pages.yml (после слияния в `main`)
 - [ ] Сборки `dist-single` и `dist-offline` приложены к релизу
