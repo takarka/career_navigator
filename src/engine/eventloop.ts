@@ -260,7 +260,7 @@ export function simulate(ops: Op[]): { frames: Frame[]; log: string[] } {
     t.after?.();
   };
 
-  const drain = (phaseAfter: Phase) => {
+  const drain = () => {
     do {
       while (tickQ.length) {
         const t = tickQ.shift()!;
@@ -273,14 +273,13 @@ export function simulate(ops: Op[]): { frames: Frame[]; log: string[] } {
         snap(`Выполнена микрозадача`, 'microtask', t.label);
       }
     } while (tickQ.length);
-    void phaseAfter;
   };
 
   /* --- старт --- */
   snap('Старт: скрипт загружен, стек пуст', 'start');
   runSeq(ops);
   snap('Основной скрипт выполнен (синхронный код)', 'main', 'основной скрипт');
-  drain('main');
+  drain();
   now = 1; // к моменту запуска цикла прошла ≈1 мс
 
   /* --- цикл --- */
@@ -292,7 +291,7 @@ export function simulate(ops: Op[]): { frames: Frame[]; log: string[] } {
       timers = timers.filter((x) => x !== t);
       runTask(t);
       snap('Фаза timers: сработал таймер', 'timers', t.label);
-      drain('timers');
+      drain();
     }
 
     /* poll */
@@ -313,7 +312,7 @@ export function simulate(ops: Op[]): { frames: Frame[]; log: string[] } {
       const t = ioReady.shift()!;
       runTask(t);
       snap('Фаза poll: I/O-колбэк', 'poll', t.label);
-      drain('poll');
+      drain();
     }
 
     /* check */
@@ -322,7 +321,7 @@ export function simulate(ops: Op[]): { frames: Frame[]; log: string[] } {
     for (const t of batch) {
       runTask(t);
       snap('Фаза check: setImmediate', 'check', t.label);
-      drain('check');
+      drain();
     }
   }
 

@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { modules } from '../src/content/modules.ts';
 import { lessons } from '../src/content/lessons.ts';
 import { widgetLoaders } from '../src/components/widgets.tsx';
+import { blockText } from '../src/content/text.ts';
 import type { Block, Task } from '../src/content/types.ts';
 
 const errors: string[] = [];
@@ -24,25 +25,6 @@ for (const m of modules) {
 
 const taskIds = new Set<string>();
 const quizIds = new Set<string>();
-
-function textOf(b: Block): string {
-  switch (b.t) {
-    case 'md':
-      return b.text;
-    case 'callout':
-      return `${b.title ?? ''}\n${b.text}`;
-    case 'interview':
-      return `${b.q}\n${b.a}`;
-    case 'quiz':
-      return b.questions.map((q) => `${q.q}\n${q.options.join('\n')}\n${q.explain}`).join('\n');
-    case 'task': {
-      const t = b.task;
-      return [t.title, t.summary, ...(t.steps ?? []), ...(t.hints ?? []), ...(t.check ?? []), t.expected ?? '', ...(t.commands ?? []).map((c) => `${c.cmd} ${c.note ?? ''}`)].join('\n');
-    }
-    case 'widget':
-      return b.caption ?? '';
-  }
-}
 
 function checkTask(where: string, t: Task) {
   if (taskIds.has(t.id)) err(where, `повторяющийся id задачи ${t.id}`);
@@ -88,7 +70,7 @@ for (const [id, lesson] of Object.entries(lessons)) {
       });
       if (b.questions.length >= 3 && new Set(b.questions.map((q) => q.answer)).size < 2) err(`${where} quiz ${b.id}`, 'все правильные ответы на одной позиции');
     }
-    const text = textOf(b);
+    const text = blockText(b);
     if (/\bTODO\b|lorem ipsum|FIXME/i.test(text)) err(where, 'найден TODO/lorem/FIXME');
     if (/уточнить/i.test(text) && !openQuestions.includes(id)) warn(where, 'есть «уточнить», но нет записи в docs/open-questions.md');
     for (const m of text.matchAll(/\blabs\/[\w./-]+/g)) {

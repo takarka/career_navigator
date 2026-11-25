@@ -1,12 +1,9 @@
 import { useMemo, useState } from 'preact/hooks';
-import { simulate, toSource } from '../engine/eventloop.ts';
-import { scenarios } from '../content/m01/scenarios.ts';
+import { predictSets } from '../content/predict.ts';
 import { CodeEditor } from './CodeEditor.tsx';
 import { Markdown } from './Markdown.tsx';
 import { useDark } from '../app/theme.ts';
 import { toggle, useProgress } from '../app/state.ts';
-
-const games = scenarios.filter((s) => s.deterministic);
 
 function seededShuffle<T>(arr: T[], seed: number): T[] {
   const a = [...arr];
@@ -19,15 +16,17 @@ function seededShuffle<T>(arr: T[], seed: number): T[] {
   return a;
 }
 
-export function PredictGame({ taskId }: { taskId?: string }) {
+export function PredictGame({ taskId, set = 'event-loop' }: { taskId?: string; set?: string }) {
+  const games = predictSets[set] ?? [];
   const dark = useDark();
   const progress = useProgress();
   const [gi, setGi] = useState(0);
   const [picked, setPicked] = useState<string[]>([]);
   const [result, setResult] = useState<'idle' | 'ok' | 'bad' | 'revealed'>('idle');
   const sc = games[gi];
-  const answer = useMemo(() => simulate(sc.ops).log, [sc]);
-  const source = useMemo(() => toSource(sc.ops), [sc]);
+  if (!sc) return <p>Набор заданий «{set}» не найден.</p>;
+  const answer = sc.answer;
+  const source = sc.code;
   const chips = useMemo(() => {
     let attempt = 0;
     let shuffled = seededShuffle(answer, sc.id.length * 7919 + 13);

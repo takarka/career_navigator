@@ -37,7 +37,8 @@ export interface QuizQuestion {
 }
 
 export type Block =
-  | { t: 'md'; text: string }
+  /** detail: true — блок скрывается в режиме «Коротко». */
+  | { t: 'md'; text: string; detail?: boolean }
   | { t: 'callout'; kind: 'info' | 'warn' | 'tip'; title?: string; text: string }
   | { t: 'interview'; q: string; a: string }
   | { t: 'widget'; name: string; props?: Record<string, unknown>; caption?: string; model?: boolean }

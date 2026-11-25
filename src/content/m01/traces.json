@@ -1,0 +1,44 @@
+{
+  "node": "v22.23.5",
+  "traces": {
+    "basics": [
+      "script start",
+      "script end",
+      "nextTick",
+      "promise.then",
+      "setTimeout"
+    ],
+    "async-await": [
+      "script start",
+      "f: до await",
+      "script end",
+      "f: после await",
+      "promise.then"
+    ],
+    "tick-vs-promise": [
+      "sync",
+      "nextTick 1",
+      "promise 1",
+      "promise внутри nextTick",
+      "nextTick внутри promise"
+    ],
+    "timers": [
+      "sync",
+      "then 1",
+      "then 2",
+      "timeout 0",
+      "promise в timeout 0",
+      "timeout 0 (второй)",
+      "timeout 10"
+    ],
+    "io-phase": [
+      "start",
+      "end",
+      "I/O callback",
+      "nextTick",
+      "promise",
+      "setImmediate",
+      "setTimeout"
+    ]
+  }
+}

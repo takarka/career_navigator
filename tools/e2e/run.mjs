@@ -1,4 +1,5 @@
 import puppeteer from 'puppeteer-core';
+import { AxePuppeteer } from '@axe-core/puppeteer';
 const browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH ?? '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--disable-gpu'], protocolTimeout: 30000 });
 const page = await browser.newPage();
 const errors = [];
@@ -117,6 +118,58 @@ await page.goto(base + '#/module/m08', { waitUntil: 'networkidle0' });
 check('module page lists 8 lessons', (await page.$$('.lesson-list li')).length === 8);
 await page.goto(base + '#/sandbox', { waitUntil: 'networkidle0' });
 check('sandbox page', !!(await page.$('.sandbox')));
+
+// --- Фаза A: оглавление, режим «Коротко», заметки, поиск, ширины, a11y
+await page.setViewport({ width: 1280, height: 900 });
+// смена isMobile перезагружает страницу: дожидаемся её, затем идём дальше
+await sleep(800);
+await page.goto(base, { waitUntil: 'networkidle0' });
+await page.goto(base + '#/lesson/m01-l02', { waitUntil: 'networkidle0' });
+await sleep(400);
+check('toc rendered', !!(await page.$('.toc li button')));
+const fullCount = (await page.$$('.lesson .md')).length;
+await page.evaluate(() => [...document.querySelectorAll('.seg button')].find((b) => b.textContent === 'Коротко').click());
+await sleep(150);
+const shortCount = (await page.$$('.lesson .md')).length;
+check('short mode hides detail blocks', shortCount < fullCount, `${fullCount} -> ${shortCount}`);
+await page.evaluate(() => [...document.querySelectorAll('.seg button')].find((b) => b.textContent === 'Подробно').click());
+await page.type('.notes textarea', 'моя заметка');
+await sleep(100);
+await page.goto(base + '#/sandbox', { waitUntil: 'networkidle0' });
+await page.goto(base + '#/lesson/m01-l02', { waitUntil: 'networkidle0' });
+check('note persists', (await page.$eval('.notes textarea', (e) => e.value)) === 'моя заметка');
+await page.goto(base + '#/search/' + encodeURIComponent('nextTick'), { waitUntil: 'networkidle0' });
+check('search finds lesson', (await page.$$('.hits li')).length >= 1);
+await page.goto(base + '#/search/' + encodeURIComponent('zzzнетакого'), { waitUntil: 'networkidle0' });
+check('search empty state', (await page.$('.hits')) === null);
+
+for (const w of [360, 390, 768]) {
+  await page.setViewport({ width: w, height: 800 });
+  for (const hash of ['#/', '#/module/m01', '#/lesson/m01-l02', '#/sandbox']) {
+    await page.goto(base + hash, { waitUntil: 'networkidle0' });
+    await sleep(250);
+    const o = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    check(`no overflow ${w}px ${hash}`, o <= 1, `overflow=${o}`);
+  }
+}
+
+await page.setViewport({ width: 1280, height: 900 });
+for (const theme of ['light', 'dark']) {
+  for (const hash of ['#/', '#/module/m01', '#/lesson/m01-l02', '#/sandbox']) {
+    await page.goto(base + hash, { waitUntil: 'networkidle0' });
+    await page.evaluate((t) => {
+      const k = 'nodejs-textbook:v1';
+      const st = JSON.parse(localStorage.getItem(k) ?? '{}');
+      st.theme = t;
+      localStorage.setItem(k, JSON.stringify(st));
+    }, theme);
+    await page.reload({ waitUntil: 'networkidle0' });
+    await sleep(300);
+    const res = await new AxePuppeteer(page).analyze();
+    const bad = res.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
+    check(`axe ${theme} ${hash}`, bad.length === 0, bad.map((v) => `${v.id}(${v.nodes.length}): ${v.nodes[0].target.join(' ')}`).join('; '));
+  }
+}
 
 console.log(results.join('\n'));
 console.log('ERRORS:', errors.length ? errors.join('\n') : 'none');

@@ -4,7 +4,10 @@ import { lessons } from '../content/lessons.ts';
 import { BlockView } from '../components/Blocks.tsx';
 import { Sandbox } from '../components/Sandbox.tsx';
 import { modeInfo } from '../components/TaskCard.tsx';
-import { exportProgress, importProgress, toggle, useProgress } from './state.ts';
+import { Toc } from '../components/Toc.tsx';
+import { Notes } from '../components/Notes.tsx';
+import { exportProgress, importProgress, setDetail, toggle, useProgress } from './state.ts';
+import { search } from './search.ts';
 import { href } from './router.ts';
 
 function moduleStats(id: string, progress: ReturnType<typeof useProgress>) {
@@ -135,7 +138,17 @@ export function LessonPage({ id }: { id: string }) {
           <p>Содержание появится по плану реализации. Сейчас готов урок про event loop в модуле 1 — он задаёт формат для остальных.</p>
         </div>
       )}
-      {lesson?.blocks.map((b, i) => <BlockView key={i} block={b} />)}
+      {lesson && (
+        <div class="lesson-tools">
+          <div class="seg" role="group" aria-label="Режим чтения">
+            <button class={progress.detail ? '' : 'on'} aria-pressed={!progress.detail} onClick={() => setDetail(false)}>Коротко</button>
+            <button class={progress.detail ? 'on' : ''} aria-pressed={progress.detail} onClick={() => setDetail(true)}>Подробно</button>
+          </div>
+          <Toc lessonId={id} />
+        </div>
+      )}
+      {lesson?.blocks.map((b, i) => (b.t === 'md' && b.detail && !progress.detail ? null : <BlockView key={i} block={b} />))}
+      {lesson && <Notes lessonId={id} />}
       {lesson && (
         <label class="donebox big">
           <input type="checkbox" checked={!!progress.lessons[id]} onChange={() => toggle('lessons', id)} /> Урок пройден
@@ -156,6 +169,34 @@ export function SandboxPage() {
       <h1>JS-песочница</h1>
       <p class="lead">Свободный запуск JavaScript в изолированном Web Worker. Подходит для проверки порядка выполнения Promise, <code>queueMicrotask</code> и <code>setTimeout</code>.</p>
       <Sandbox />
+    </div>
+  );
+}
+
+export function SearchPage({ q }: { q: string }) {
+  const hits = search(q);
+  return (
+    <div class="page">
+      <nav class="crumbs"><a href={href.home()}>Главная</a> › Поиск</nav>
+      <h1>Поиск</h1>
+      {!q.trim() ? (
+        <p class="muted">Введи слово или фразу в строке поиска сверху.</p>
+      ) : hits.length === 0 ? (
+        <p>По запросу «{q}» ничего не найдено. Поиск идёт по заголовкам всех уроков и по тексту готовых.</p>
+      ) : (
+        <>
+          <p class="muted">Найдено: {hits.length}</p>
+          <ul class="hits">
+            {hits.map((h) => (
+              <li key={h.lessonId}>
+                <a href={href.lesson(h.lessonId)}><b>{h.title}</b></a>
+                <small class="muted"> · {h.moduleTitle}</small>
+                <p>{h.snippet}</p>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </div>
   );
 }

@@ -7,6 +7,7 @@ interface Props {
   readOnly?: boolean;
   dark: boolean;
   minHeight?: string;
+  label?: string;
 }
 
 let impl: ComponentType<Props> | null = null;

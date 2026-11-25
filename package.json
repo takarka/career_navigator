@@ -13,7 +13,8 @@
     "gen:labs": "tsx tools/gen-labs.ts",
     "e2e": "node tools/e2e/run.mjs",
     "lint:content": "tsx tools/lint-content.ts",
-    "check:size": "node tools/check-size.mjs dist"
+    "check:size": "node tools/check-size.mjs dist",
+    "record:traces": "tsx tools/record-traces.ts"
   },
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.5",
@@ -24,6 +25,7 @@
     "preact": "^11.2.0"
   },
   "devDependencies": {
+    "@axe-core/puppeteer": "^4.14.1",
     "@preact/preset-vite": "^2.10.6",
     "@types/node": "^26.6.6",
     "puppeteer-core": "^25.18.1",

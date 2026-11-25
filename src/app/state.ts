@@ -7,10 +7,12 @@ export interface Progress {
   quizzes: Record<string, { score: number; total: number }>;
   notes: Record<string, string>;
   theme: 'auto' | 'light' | 'dark';
+  /** false — режим «Коротко»: блоки md с detail скрыты. */
+  detail: boolean;
 }
 
 const KEY = 'nodejs-textbook:v1';
-const empty = (): Progress => ({ lessons: {}, tasks: {}, predict: {}, quizzes: {}, notes: {}, theme: 'auto' });
+const empty = (): Progress => ({ lessons: {}, tasks: {}, predict: {}, quizzes: {}, notes: {}, theme: 'auto', detail: true });
 
 let memory: string | null = null;
 function read(): string | null {
@@ -86,5 +88,18 @@ export function toggle(map: 'lessons' | 'tasks' | 'predict', id: string, value?:
     const on = value ?? !p[map][id];
     if (on) p[map][id] = true;
     else delete p[map][id];
+  });
+}
+
+export function setNote(lessonId: string, text: string) {
+  update((p) => {
+    if (text.trim()) p.notes[lessonId] = text;
+    else delete p.notes[lessonId];
+  });
+}
+
+export function setDetail(on: boolean) {
+  update((p) => {
+    p.detail = on;
   });
 }

@@ -36,3 +36,12 @@ describe('модель event loop совпадает с реальным Node', 
     }
   });
 });
+
+describe('записанные трассы (PredictGame)', () => {
+  it('совпадают с моделью и содержат все детерминированные сценарии', async () => {
+    const { default: file } = await import('../content/m01/traces.json');
+    const det = scenarios.filter((x) => x.deterministic);
+    expect(Object.keys(file.traces).sort()).toEqual(det.map((s) => s.id).sort());
+    for (const s of det) expect((file.traces as Record<string, string[]>)[s.id]).toEqual(simulate(s.ops).log);
+  });
+});

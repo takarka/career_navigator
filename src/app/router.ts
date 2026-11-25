@@ -4,13 +4,23 @@ export type Route =
   | { name: 'home' }
   | { name: 'module'; id: string }
   | { name: 'lesson'; id: string }
-  | { name: 'sandbox' };
+  | { name: 'sandbox' }
+  | { name: 'search'; q: string };
 
 export function parse(hash: string): Route {
   const parts = hash.replace(/^#\/?/, '').split('/').filter(Boolean);
   if (parts[0] === 'module' && parts[1]) return { name: 'module', id: parts[1] };
   if (parts[0] === 'lesson' && parts[1]) return { name: 'lesson', id: parts[1] };
   if (parts[0] === 'sandbox') return { name: 'sandbox' };
+  if (parts[0] === 'search') {
+    let q = parts[1] ?? '';
+    try {
+      q = decodeURIComponent(q);
+    } catch {
+      /* оставляем как есть */
+    }
+    return { name: 'search', q };
+  }
   return { name: 'home' };
 }
 
@@ -32,4 +42,5 @@ export const href = {
   module: (id: string) => `#/module/${id}`,
   lesson: (id: string) => `#/lesson/${id}`,
   sandbox: () => '#/sandbox',
+  search: (q: string) => `#/search/${encodeURIComponent(q)}`,
 };
