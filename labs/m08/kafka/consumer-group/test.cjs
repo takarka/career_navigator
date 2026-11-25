@@ -26,8 +26,9 @@ const waitFor = async (cond, ms, what) => {
   }
   await admin.createTopics({ waitForLeaders: true, topics: [{ topic, numPartitions: 4 }] });
 
-  const users = ['u1', 'u2', 'u3', 'u4'];
-  const events = Array.from({ length: 40 }, (_, i) => ({ userId: users[i % 4], seq: Math.floor(i / 4) }));
+  // пользователей 3, а партиций 4: иначе круговая раздача без ключа случайно совпала бы с раскладкой по пользователям
+  const users = ['u1', 'u2', 'u3'];
+  const events = Array.from({ length: 40 }, (_, i) => ({ userId: users[i % 3], seq: Math.floor(i / 3) }));
   const producer = kafka.producer();
   await producer.connect();
   // отправляем по одному, чтобы порядок отправки был определён
@@ -62,7 +63,7 @@ const waitFor = async (cond, ms, what) => {
   // rebalance: останавливаем c2, после этого c1 должен получить сообщения из всех партиций
   await c2.disconnect();
   const before = received.length;
-  for (let i = 0; i < 20; i++) await producer.send({ topic, messages: [toKafkaMessage({ userId: users[i % 4], seq: 100 + i })] });
+  for (let i = 0; i < 20; i++) await producer.send({ topic, messages: [toKafkaMessage({ userId: users[i % 3], seq: 100 + i })] });
   const afterAll = await waitFor(() => received.length >= before + 20, 30000, 'чтение после rebalance');
   const lateParts = new Set(received.slice(before).filter((m) => m.consumer === 'c1').map((m) => m.partition));
   console.log(`после ухода c2 consumer c1 читает партиции: ${[...lateParts].sort().join(', ')}`);

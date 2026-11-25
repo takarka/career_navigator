@@ -11,7 +11,7 @@ const out = scenarios.flatMap((sc) =>
   levels.map((level) => {
     const o = simulate(sc, level);
     const values: Record<string, (number | undefined)[]> = { T1: [], T2: [] };
-    for (const st of o.steps) if (['read', 'count', 'forUpdate'].includes(st.op.op) && !st.error) values[st.op.s].push(st.value);
+    for (const st of o.steps) if (['read', 'count', 'forUpdate'].includes(st.op.op) && !st.error && !st.blocked) values[st.op.s].push(st.value); // заблокированный шаг значения не даёт: оно появится после разблокировки
     return {
       id: `${sc.id} @ ${level}`,
       title: sc.title,

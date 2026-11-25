@@ -2,5 +2,5 @@
   "name": "lab-m08-rabbitmq-retry-dlq",
   "private": true,
   "scripts": { "test": "node test.cjs", "test:solution": "node test.cjs solution" },
-  "dependencies": { "amqplib": "^2.4.1" }
+  "dependencies": { "amqplib": "2.4.1" }
 }
