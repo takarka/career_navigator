@@ -8,7 +8,8 @@ const { getStatus, SoapFault } = require('../../m12/soap-mock/solution/client.cj
 
 const MAX_ATTEMPTS = 3;
 
-function createApp({ soapUrl, retryDelayMs = 50, timeoutMs = 500 } = {}) {
+function createApp({ soapUrl, retryDelayMs = 50, timeoutMs = 500, rateLimit = 0 } = {}) {
+  const hits = new Map(); // окно 1 с на IP; 0 — ограничение выключено
   const db = new DatabaseSync(':memory:');
   db.exec(`
     CREATE TABLE application (seq INTEGER PRIMARY KEY AUTOINCREMENT, id TEXT UNIQUE NOT NULL, title TEXT NOT NULL, payload TEXT, status TEXT NOT NULL, idem_key TEXT UNIQUE);
@@ -75,6 +76,14 @@ function createApp({ soapUrl, retryDelayMs = 50, timeoutMs = 500 } = {}) {
     let data = '';
     req.on('data', (d) => (data += d));
     req.on('end', () => {
+      if (rateLimit > 0) {
+        const sec = Math.floor(Date.now() / 1000);
+        const ip = req.socket.remoteAddress;
+        const h = hits.get(ip);
+        const n = h && h.sec === sec ? h.n + 1 : 1;
+        hits.set(ip, { sec, n });
+        if (n > rateLimit) { res.writeHead(429, { 'Content-Type': 'application/json', 'Retry-After': '1' }); return res.end('{"error":"too many requests"}'); }
+      }
       const url = new URL(req.url, 'http://x');
       const parts = url.pathname.split('/').filter(Boolean);
       if (parts[0] !== 'applications') return send(res, 404, { error: 'not found' });
@@ -103,10 +112,13 @@ function createApp({ soapUrl, retryDelayMs = 50, timeoutMs = 500 } = {}) {
       return send(res, 404, { error: 'not found' });
     });
   });
-  return { server, db, close: () => { clearInterval(timer); server.close(); db.close(); } };
+  return { server, db, close: () => { clearInterval(timer); db.close(); } };
 }
 
 module.exports = { createApp, createServer: () => createApp().server };
 if (require.main === module) {
-  createApp({ soapUrl: process.env.SOAP_URL }).server.listen(Number(process.env.PORT ?? 3000), '127.0.0.1', () => console.log('listening'));
+  const app = createApp({ soapUrl: process.env.SOAP_URL, rateLimit: Number(process.env.RATE_LIMIT ?? 0) });
+  app.server.listen(Number(process.env.PORT ?? 3000), '127.0.0.1', () => console.log('listening'));
+  // graceful shutdown: перестаём принимать соединения, ждём текущие запросы, выходим с кодом 0
+  process.on('SIGTERM', () => { app.server.close(() => { app.close(); process.exit(0); }); app.server.closeIdleConnections(); });
 }

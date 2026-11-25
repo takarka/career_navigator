@@ -11,7 +11,7 @@
 ## Известные ограничения
 - Не проверялось запуском (нет Docker): `labs/docker-compose.yml`, лаборатории на RabbitMQ и Kafka, оракул изоляции на PostgreSQL, примеры Dockerfile и compose, workflow GitHub Actions.
 - Нет фактов о ШЭП и Kalkan: уроки модуля 12 общие, источники не найдены (`docs/research/m12.md`).
-- Эталон capstone упрощён (без NestJS и настоящего брокера).
+- Эталон capstone упрощён: SQLite вместо PostgreSQL, без NestJS, настоящего брокера и WebSocket.
 - Открытые вопросы: `docs/open-questions.md`.
 
 ## Чек-лист перед тегом

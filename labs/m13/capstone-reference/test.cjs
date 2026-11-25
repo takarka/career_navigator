@@ -32,8 +32,24 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   });
   if (acc.status !== 0) problems.push('приёмочные тесты контракта не прошли:\n' + acc.stdout);
 
-  app.close(); mock.closeAllConnections(); mock.close();
+  // rate limit: 6-й запрос за секунду получает 429
+  const lim = createApp({ rateLimit: 5 });
+  await new Promise((r) => lim.server.listen(0, '127.0.0.1', r));
+  const codes = [];
+  for (let i = 0; i < 7; i++) codes.push((await fetch(`http://127.0.0.1:${lim.server.address().port}/applications`)).status);
+  if (!codes.slice(5).includes(429)) problems.push('rate limit не вернул 429: ' + codes.join(','));
+  lim.server.close(); lim.close();
+
+  // graceful shutdown: SIGTERM -> процесс завершается с кодом 0
+  const child = spawn(process.execPath, ['server.cjs'], { cwd: __dirname, env: { ...process.env, PORT: '39871', NODE_NO_WARNINGS: '1' } });
+  for (let i = 0; i < 50; i++) { try { await fetch('http://127.0.0.1:39871/applications'); break; } catch { await sleep(100); } }
+  const exited = new Promise((r) => child.on('exit', (code) => r(code)));
+  child.kill('SIGTERM');
+  const code = await Promise.race([exited, sleep(3000).then(() => 'timeout')]);
+  if (code !== 0) { problems.push('SIGTERM: код выхода ' + code); child.kill('SIGKILL'); }
+
+  app.server.close(); app.close(); mock.closeAllConnections(); mock.close();
   if (problems.length) { problems.forEach((p) => console.log('ПРОВАЛ ' + p)); process.exit(1); }
-  console.log('OK: контракт, Outbox, Fault, таймаут и ретраи');
+  console.log('OK: контракт, Outbox, Fault, таймаут, ретраи, rate limit, graceful shutdown');
   process.exit(0);
 })();
