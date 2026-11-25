@@ -1,0 +1,32 @@
+name: release
+
+# При пуше тега v* собирает dist-single и dist-offline и публикует релиз с заметками из docs/RELEASE.md.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Сборки
+        run: |
+          npm run build:single
+          npm run build:offline
+          mkdir -p release
+          cp dist-single/index.html release/textbook-single.html
+          (cd dist-offline && zip -qr ../release/textbook-offline.zip .)
+      - name: Релиз
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" release/textbook-single.html release/textbook-offline.zip --title "${GITHUB_REF_NAME}" --notes-file docs/RELEASE.md

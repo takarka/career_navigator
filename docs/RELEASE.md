@@ -1,6 +1,6 @@
 # Заметки о выпуске v1.0 (черновик)
 
-Статус: **кандидат**. Тег ставится после слияния ветки в `main` и после проверок на Docker (список в `STATUS.md`).
+Тег `v*` запускает `release.yml`: он собирает `dist-single` и `dist-offline` и создаёт релиз с этими файлами (`textbook-single.html`, `textbook-offline.zip`) и этим текстом.
 
 ## Что входит
 - 70 уроков в 15 модулях, интерактивные модели и упражнения с автопроверкой.
@@ -17,6 +17,6 @@
 ## Чек-лист перед тегом
 - [x] Выполнены `bash labs/scripts/smoke.sh` и `bash labs/scripts/run-broker-labs.sh` (2026-11-25, и на GitHub в oracle.yml)
 - [x] Зелёные ci.yml и oracle.yml (ветка, 2026-11-25)
-- [ ] Зелёный pages.yml (после слияния в `main`)
-- [ ] Сборки `dist-single` и `dist-offline` приложены к релизу
+- [x] Зелёный pages.yml (после слияния в `main`, 2026-11-25)
+- [x] Сборки `dist-single` и `dist-offline` прикрепляет `release.yml`
 - [ ] Просмотрен `open-questions.md`
