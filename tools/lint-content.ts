@@ -64,7 +64,7 @@ for (const [id, lesson] of Object.entries(lessons)) {
 
   const blocks = lesson.blocks;
   const widgetsN = blocks.filter((b) => b.t === 'widget').length;
-  const sandboxTasks = blocks.filter((b) => b.t === 'task' && (b.task.exercise || b.task.testExercise || b.task.sqlExercise || b.task.widget?.name === 'sandbox')).length;
+  const sandboxTasks = blocks.filter((b) => b.t === 'task' && (b.task.exercise || b.task.testExercise || b.task.sqlExercise || b.task.widget)).length;
   if (widgetsN + sandboxTasks < 1) err(where, 'нужен минимум один widget или sandbox-задача');
   if (blocks.filter((b) => b.t === 'interview').length < 2) err(where, 'нужно минимум 2 блока interview');
   if (!blocks.some((b) => b.t === 'task')) err(where, 'нужна минимум одна task');

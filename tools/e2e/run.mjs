@@ -112,7 +112,7 @@ check('no horizontal overflow on mobile', overflow <= 1, `overflow=${overflow}`)
 await page.screenshot({ path: (process.env.SHOT_DIR ?? '/tmp') + '/mobile.png' });
 
 // soon lesson + module page + sandbox page
-await page.goto(base + '#/lesson/m05-l01', { waitUntil: 'networkidle0' });
+await page.goto(base + '#/lesson/m07-l01', { waitUntil: 'networkidle0' });
 check('soon lesson shows stub', (await page.$eval('.callout', (e) => e.textContent)).includes('в разработке'));
 await page.goto(base + '#/module/m08', { waitUntil: 'networkidle0' });
 check('module page lists 8 lessons', (await page.$$('.lesson-list li')).length === 8);
@@ -299,7 +299,7 @@ check('m04-l02: cache sim renders chart', !!(await page.$('.cachesim .chart svg'
 
 for (const w of [360, 390, 768]) {
   await page.setViewport({ width: w, height: 800 });
-  for (const hash of ['#/', '#/module/m01', '#/lesson/m01-l01', '#/lesson/m01-l02', '#/lesson/m01-l03', '#/lesson/m01-l04', '#/lesson/m01-l05', '#/lesson/m01-l06', '#/lesson/m08-l01', '#/lesson/m08-l02', '#/lesson/m08-l03', '#/lesson/m08-l04', '#/lesson/m08-l05', '#/lesson/m08-l06', '#/lesson/m08-l07', '#/lesson/m08-l08', '#/lesson/m03-l01', '#/lesson/m03-l02', '#/lesson/m03-l04', '#/lesson/m03-l05', '#/lesson/m03-l06', '#/lesson/m03-l07', '#/lesson/m04-l01', '#/lesson/m04-l02', '#/lesson/m04-l03', '#/lesson/m04-l04', '#/lesson/m04-l05', '#/lesson/m06-l01', '#/lesson/m06-l02', '#/lesson/m06-l03', '#/lesson/m06-l04', '#/lesson/m06-l05', '#/lesson/m14-l03', '#/lesson/m14-l04', '#/sandbox', '#/practice/interview', '#/demo']) {
+  for (const hash of ['#/', '#/module/m01', '#/lesson/m01-l01', '#/lesson/m01-l02', '#/lesson/m01-l03', '#/lesson/m01-l04', '#/lesson/m01-l05', '#/lesson/m01-l06', '#/lesson/m08-l01', '#/lesson/m08-l02', '#/lesson/m08-l03', '#/lesson/m08-l04', '#/lesson/m08-l05', '#/lesson/m08-l06', '#/lesson/m08-l07', '#/lesson/m08-l08', '#/lesson/m03-l01', '#/lesson/m03-l02', '#/lesson/m03-l04', '#/lesson/m03-l05', '#/lesson/m03-l06', '#/lesson/m03-l07', '#/lesson/m04-l01', '#/lesson/m04-l02', '#/lesson/m04-l03', '#/lesson/m04-l04', '#/lesson/m04-l05', '#/lesson/m06-l01', '#/lesson/m06-l02', '#/lesson/m06-l03', '#/lesson/m06-l04', '#/lesson/m06-l05', '#/lesson/m05-l01', '#/lesson/m05-l02', '#/lesson/m05-l03', '#/lesson/m05-l04', '#/lesson/m05-l05', '#/lesson/m14-l03', '#/lesson/m14-l04', '#/sandbox', '#/practice/interview', '#/demo']) {
     await page.goto(base + hash, { waitUntil: 'networkidle0' });
     await sleep(250);
     const o = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -309,7 +309,7 @@ for (const w of [360, 390, 768]) {
 
 await page.setViewport({ width: 1280, height: 900 });
 for (const theme of ['light', 'dark']) {
-  for (const hash of ['#/', '#/module/m01', '#/lesson/m01-l02', '#/sandbox', '#/demo', '#/practice/interview', '#/practice/flashcards', '#/practice/star', '#/practice/intro', '#/lesson/m14-l01', '#/lesson/m14-l03', '#/lesson/m14-l04', '#/lesson/m01-l01', '#/lesson/m01-l03', '#/lesson/m01-l04', '#/lesson/m01-l05', '#/lesson/m01-l06', '#/lesson/m08-l01', '#/lesson/m08-l02', '#/lesson/m08-l03', '#/lesson/m08-l04', '#/lesson/m08-l05', '#/lesson/m08-l06', '#/lesson/m08-l07', '#/lesson/m08-l08', '#/lesson/m03-l01', '#/lesson/m03-l02', '#/lesson/m03-l04', '#/lesson/m03-l05', '#/lesson/m03-l06', '#/lesson/m03-l07', '#/lesson/m04-l01', '#/lesson/m04-l02', '#/lesson/m04-l03', '#/lesson/m04-l04', '#/lesson/m04-l05', '#/lesson/m06-l01', '#/lesson/m06-l02', '#/lesson/m06-l03', '#/lesson/m06-l04', '#/lesson/m06-l05']) {
+  for (const hash of ['#/', '#/module/m01', '#/lesson/m01-l02', '#/sandbox', '#/demo', '#/practice/interview', '#/practice/flashcards', '#/practice/star', '#/practice/intro', '#/lesson/m14-l01', '#/lesson/m14-l03', '#/lesson/m14-l04', '#/lesson/m01-l01', '#/lesson/m01-l03', '#/lesson/m01-l04', '#/lesson/m01-l05', '#/lesson/m01-l06', '#/lesson/m08-l01', '#/lesson/m08-l02', '#/lesson/m08-l03', '#/lesson/m08-l04', '#/lesson/m08-l05', '#/lesson/m08-l06', '#/lesson/m08-l07', '#/lesson/m08-l08', '#/lesson/m03-l01', '#/lesson/m03-l02', '#/lesson/m03-l04', '#/lesson/m03-l05', '#/lesson/m03-l06', '#/lesson/m03-l07', '#/lesson/m04-l01', '#/lesson/m04-l02', '#/lesson/m04-l03', '#/lesson/m04-l04', '#/lesson/m04-l05', '#/lesson/m06-l01', '#/lesson/m06-l02', '#/lesson/m06-l03', '#/lesson/m06-l04', '#/lesson/m06-l05', '#/lesson/m05-l01', '#/lesson/m05-l02', '#/lesson/m05-l03', '#/lesson/m05-l04', '#/lesson/m05-l05']) {
     await page.goto(base + hash, { waitUntil: 'networkidle0' });
     await page.evaluate((t) => {
       const k = 'nodejs-textbook:v1';
