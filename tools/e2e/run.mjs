@@ -112,7 +112,7 @@ check('no horizontal overflow on mobile', overflow <= 1, `overflow=${overflow}`)
 await page.screenshot({ path: (process.env.SHOT_DIR ?? '/tmp') + '/mobile.png' });
 
 // soon lesson + module page + sandbox page
-await page.goto(base + '#/lesson/m03-l02', { waitUntil: 'networkidle0' });
+await page.goto(base + '#/lesson/m05-l01', { waitUntil: 'networkidle0' });
 check('soon lesson shows stub', (await page.$eval('.callout', (e) => e.textContent)).includes('в разработке'));
 await page.goto(base + '#/module/m08', { waitUntil: 'networkidle0' });
 check('module page lists 8 lessons', (await page.$$('.lesson-list li')).length === 8);
@@ -257,9 +257,32 @@ await page.goto(base + '#/lesson/m08-l08', { waitUntil: 'networkidle0' });
 await page.waitForSelector('.sagaviz .timeline svg', { timeout: 8000 });
 check('m08-l08: saga viz renders', !!(await page.$('.sagaviz .timeline svg')));
 
+// --- Фаза F: модуль 3 (PostgreSQL в браузере)
+if (!process.env.BASE_URL?.startsWith('file:')) {
+  await page.goto(base + '#/lesson/m03-l01', { waitUntil: 'networkidle0' });
+  await page.waitForSelector('.sqlsandbox', { timeout: 15000 });
+  await page.waitForFunction(() => !document.querySelector('.sqlsandbox .muted')?.textContent.includes('загружаю'), { timeout: 90000 });
+  await page.evaluate(() => [...document.querySelectorAll('.sqlsandbox button')].find((b) => b.textContent.includes('Выполнить')).click());
+  await page.waitForSelector('.sqlsandbox .result table', { timeout: 30000 });
+  const rows = await page.$$eval('.sqlsandbox .result tbody tr', (r) => r.length);
+  check('m03-l01: PGlite runs starter query in browser', rows === 5, `rows=${rows}`);
+  await page.goto(base + '#/lesson/m03-l06', { waitUntil: 'networkidle0' });
+  await page.waitForSelector('.sqlsandbox', { timeout: 15000 });
+  await page.waitForFunction(() => !document.querySelector('.sqlsandbox .muted')?.textContent.includes('загружаю'), { timeout: 90000 });
+  await page.evaluate(() => [...document.querySelectorAll('.sqlsandbox button')].find((b) => b.textContent.includes('EXPLAIN ANALYZE')).click());
+  await page.waitForSelector('.sqlsandbox .plantree', { timeout: 30000 });
+  check('m03-l06: EXPLAIN ANALYZE renders a plan tree', (await page.$$eval('.sqlsandbox .plannode', (n) => n.length)) >= 1);
+  await page.goto(base + '#/lesson/m03-l02', { waitUntil: 'networkidle0' });
+  await page.waitForSelector('.btreeviz svg, .btreeviz .bnode', { timeout: 15000 });
+  check('m03-l02: B-tree viz renders', (await page.$$('.btreeviz .bnode')).length >= 3);
+  await page.goto(base + '#/lesson/m03-l04', { waitUntil: 'networkidle0' });
+  await page.waitForSelector('.isosim', { timeout: 15000 });
+  check('m03-l04: isolation sim renders', !!(await page.$('.isosim .outlog')));
+}
+
 for (const w of [360, 390, 768]) {
   await page.setViewport({ width: w, height: 800 });
-  for (const hash of ['#/', '#/module/m01', '#/lesson/m01-l01', '#/lesson/m01-l02', '#/lesson/m01-l03', '#/lesson/m01-l04', '#/lesson/m01-l05', '#/lesson/m01-l06', '#/lesson/m08-l01', '#/lesson/m08-l02', '#/lesson/m08-l03', '#/lesson/m08-l04', '#/lesson/m08-l05', '#/lesson/m08-l06', '#/lesson/m08-l07', '#/lesson/m08-l08', '#/lesson/m14-l03', '#/lesson/m14-l04', '#/sandbox', '#/practice/interview', '#/demo']) {
+  for (const hash of ['#/', '#/module/m01', '#/lesson/m01-l01', '#/lesson/m01-l02', '#/lesson/m01-l03', '#/lesson/m01-l04', '#/lesson/m01-l05', '#/lesson/m01-l06', '#/lesson/m08-l01', '#/lesson/m08-l02', '#/lesson/m08-l03', '#/lesson/m08-l04', '#/lesson/m08-l05', '#/lesson/m08-l06', '#/lesson/m08-l07', '#/lesson/m08-l08', '#/lesson/m03-l01', '#/lesson/m03-l02', '#/lesson/m03-l04', '#/lesson/m03-l05', '#/lesson/m03-l06', '#/lesson/m03-l07', '#/lesson/m14-l03', '#/lesson/m14-l04', '#/sandbox', '#/practice/interview', '#/demo']) {
     await page.goto(base + hash, { waitUntil: 'networkidle0' });
     await sleep(250);
     const o = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -269,7 +292,7 @@ for (const w of [360, 390, 768]) {
 
 await page.setViewport({ width: 1280, height: 900 });
 for (const theme of ['light', 'dark']) {
-  for (const hash of ['#/', '#/module/m01', '#/lesson/m01-l02', '#/sandbox', '#/demo', '#/practice/interview', '#/practice/flashcards', '#/practice/star', '#/practice/intro', '#/lesson/m14-l01', '#/lesson/m14-l03', '#/lesson/m14-l04', '#/lesson/m01-l01', '#/lesson/m01-l03', '#/lesson/m01-l04', '#/lesson/m01-l05', '#/lesson/m01-l06', '#/lesson/m08-l01', '#/lesson/m08-l02', '#/lesson/m08-l03', '#/lesson/m08-l04', '#/lesson/m08-l05', '#/lesson/m08-l06', '#/lesson/m08-l07', '#/lesson/m08-l08']) {
+  for (const hash of ['#/', '#/module/m01', '#/lesson/m01-l02', '#/sandbox', '#/demo', '#/practice/interview', '#/practice/flashcards', '#/practice/star', '#/practice/intro', '#/lesson/m14-l01', '#/lesson/m14-l03', '#/lesson/m14-l04', '#/lesson/m01-l01', '#/lesson/m01-l03', '#/lesson/m01-l04', '#/lesson/m01-l05', '#/lesson/m01-l06', '#/lesson/m08-l01', '#/lesson/m08-l02', '#/lesson/m08-l03', '#/lesson/m08-l04', '#/lesson/m08-l05', '#/lesson/m08-l06', '#/lesson/m08-l07', '#/lesson/m08-l08', '#/lesson/m03-l01', '#/lesson/m03-l02', '#/lesson/m03-l04', '#/lesson/m03-l05', '#/lesson/m03-l06', '#/lesson/m03-l07']) {
     await page.goto(base + hash, { waitUntil: 'networkidle0' });
     await page.evaluate((t) => {
       const k = 'nodejs-textbook:v1';

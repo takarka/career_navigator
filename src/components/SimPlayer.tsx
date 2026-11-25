@@ -42,7 +42,6 @@ export function SimPlayer({ total, index, setIndex, resetKey }: Props) {
           if (atEnd) setIndex(0);
           setPlaying(!playing);
         }}
-        aria-label={playing ? 'Пауза' : 'Играть'}
       >
         {playing ? '⏸ Пауза' : atEnd ? '↺ Заново' : '▶ Играть'}
       </button>

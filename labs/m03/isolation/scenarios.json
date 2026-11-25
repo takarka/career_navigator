@@ -1,0 +1,988 @@
+[
+  {
+    "id": "nonrepeatable @ read committed",
+    "title": "Неповторяющееся чтение",
+    "level": "read committed",
+    "initial": {
+      "a": 100
+    },
+    "steps": [
+      {
+        "s": "T1",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL READ COMMITTED"
+      },
+      {
+        "s": "T1",
+        "op": "read",
+        "sql": "SELECT v FROM kv WHERE k = 'a'"
+      },
+      {
+        "s": "T2",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL READ COMMITTED"
+      },
+      {
+        "s": "T2",
+        "op": "write",
+        "sql": "UPDATE kv SET v = 200 WHERE k = 'a'"
+      },
+      {
+        "s": "T2",
+        "op": "commit",
+        "sql": "COMMIT"
+      },
+      {
+        "s": "T1",
+        "op": "read",
+        "sql": "SELECT v FROM kv WHERE k = 'a'"
+      },
+      {
+        "s": "T1",
+        "op": "commit",
+        "sql": "COMMIT"
+      }
+    ],
+    "expected": {
+      "values": {
+        "T1": [
+          100,
+          200
+        ],
+        "T2": []
+      },
+      "final": {
+        "a": 200
+      },
+      "aborted": []
+    }
+  },
+  {
+    "id": "nonrepeatable @ repeatable read",
+    "title": "Неповторяющееся чтение",
+    "level": "repeatable read",
+    "initial": {
+      "a": 100
+    },
+    "steps": [
+      {
+        "s": "T1",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL REPEATABLE READ"
+      },
+      {
+        "s": "T1",
+        "op": "read",
+        "sql": "SELECT v FROM kv WHERE k = 'a'"
+      },
+      {
+        "s": "T2",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL REPEATABLE READ"
+      },
+      {
+        "s": "T2",
+        "op": "write",
+        "sql": "UPDATE kv SET v = 200 WHERE k = 'a'"
+      },
+      {
+        "s": "T2",
+        "op": "commit",
+        "sql": "COMMIT"
+      },
+      {
+        "s": "T1",
+        "op": "read",
+        "sql": "SELECT v FROM kv WHERE k = 'a'"
+      },
+      {
+        "s": "T1",
+        "op": "commit",
+        "sql": "COMMIT"
+      }
+    ],
+    "expected": {
+      "values": {
+        "T1": [
+          100,
+          100
+        ],
+        "T2": []
+      },
+      "final": {
+        "a": 200
+      },
+      "aborted": []
+    }
+  },
+  {
+    "id": "nonrepeatable @ serializable",
+    "title": "Неповторяющееся чтение",
+    "level": "serializable",
+    "initial": {
+      "a": 100
+    },
+    "steps": [
+      {
+        "s": "T1",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL SERIALIZABLE"
+      },
+      {
+        "s": "T1",
+        "op": "read",
+        "sql": "SELECT v FROM kv WHERE k = 'a'"
+      },
+      {
+        "s": "T2",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL SERIALIZABLE"
+      },
+      {
+        "s": "T2",
+        "op": "write",
+        "sql": "UPDATE kv SET v = 200 WHERE k = 'a'"
+      },
+      {
+        "s": "T2",
+        "op": "commit",
+        "sql": "COMMIT"
+      },
+      {
+        "s": "T1",
+        "op": "read",
+        "sql": "SELECT v FROM kv WHERE k = 'a'"
+      },
+      {
+        "s": "T1",
+        "op": "commit",
+        "sql": "COMMIT"
+      }
+    ],
+    "expected": {
+      "values": {
+        "T1": [
+          100,
+          100
+        ],
+        "T2": []
+      },
+      "final": {
+        "a": 200
+      },
+      "aborted": []
+    }
+  },
+  {
+    "id": "phantom @ read committed",
+    "title": "Фантом",
+    "level": "read committed",
+    "initial": {
+      "a": 1,
+      "b": 2
+    },
+    "steps": [
+      {
+        "s": "T1",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL READ COMMITTED"
+      },
+      {
+        "s": "T1",
+        "op": "count",
+        "sql": "SELECT count(*)::int AS v FROM kv WHERE v > 0"
+      },
+      {
+        "s": "T2",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL READ COMMITTED"
+      },
+      {
+        "s": "T2",
+        "op": "insert",
+        "sql": "INSERT INTO kv (k, v) VALUES ('c', 3)"
+      },
+      {
+        "s": "T2",
+        "op": "commit",
+        "sql": "COMMIT"
+      },
+      {
+        "s": "T1",
+        "op": "count",
+        "sql": "SELECT count(*)::int AS v FROM kv WHERE v > 0"
+      },
+      {
+        "s": "T1",
+        "op": "commit",
+        "sql": "COMMIT"
+      }
+    ],
+    "expected": {
+      "values": {
+        "T1": [
+          2,
+          3
+        ],
+        "T2": []
+      },
+      "final": {
+        "a": 1,
+        "b": 2,
+        "c": 3
+      },
+      "aborted": []
+    }
+  },
+  {
+    "id": "phantom @ repeatable read",
+    "title": "Фантом",
+    "level": "repeatable read",
+    "initial": {
+      "a": 1,
+      "b": 2
+    },
+    "steps": [
+      {
+        "s": "T1",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL REPEATABLE READ"
+      },
+      {
+        "s": "T1",
+        "op": "count",
+        "sql": "SELECT count(*)::int AS v FROM kv WHERE v > 0"
+      },
+      {
+        "s": "T2",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL REPEATABLE READ"
+      },
+      {
+        "s": "T2",
+        "op": "insert",
+        "sql": "INSERT INTO kv (k, v) VALUES ('c', 3)"
+      },
+      {
+        "s": "T2",
+        "op": "commit",
+        "sql": "COMMIT"
+      },
+      {
+        "s": "T1",
+        "op": "count",
+        "sql": "SELECT count(*)::int AS v FROM kv WHERE v > 0"
+      },
+      {
+        "s": "T1",
+        "op": "commit",
+        "sql": "COMMIT"
+      }
+    ],
+    "expected": {
+      "values": {
+        "T1": [
+          2,
+          2
+        ],
+        "T2": []
+      },
+      "final": {
+        "a": 1,
+        "b": 2,
+        "c": 3
+      },
+      "aborted": []
+    }
+  },
+  {
+    "id": "phantom @ serializable",
+    "title": "Фантом",
+    "level": "serializable",
+    "initial": {
+      "a": 1,
+      "b": 2
+    },
+    "steps": [
+      {
+        "s": "T1",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL SERIALIZABLE"
+      },
+      {
+        "s": "T1",
+        "op": "count",
+        "sql": "SELECT count(*)::int AS v FROM kv WHERE v > 0"
+      },
+      {
+        "s": "T2",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL SERIALIZABLE"
+      },
+      {
+        "s": "T2",
+        "op": "insert",
+        "sql": "INSERT INTO kv (k, v) VALUES ('c', 3)"
+      },
+      {
+        "s": "T2",
+        "op": "commit",
+        "sql": "COMMIT"
+      },
+      {
+        "s": "T1",
+        "op": "count",
+        "sql": "SELECT count(*)::int AS v FROM kv WHERE v > 0"
+      },
+      {
+        "s": "T1",
+        "op": "commit",
+        "sql": "COMMIT"
+      }
+    ],
+    "expected": {
+      "values": {
+        "T1": [
+          2,
+          2
+        ],
+        "T2": []
+      },
+      "final": {
+        "a": 1,
+        "b": 2,
+        "c": 3
+      },
+      "aborted": []
+    }
+  },
+  {
+    "id": "lostupdate @ read committed",
+    "title": "Потерянное обновление",
+    "level": "read committed",
+    "initial": {
+      "a": 100
+    },
+    "steps": [
+      {
+        "s": "T1",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL READ COMMITTED"
+      },
+      {
+        "s": "T2",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL READ COMMITTED"
+      },
+      {
+        "s": "T1",
+        "op": "read",
+        "sql": "SELECT v FROM kv WHERE k = 'a'"
+      },
+      {
+        "s": "T2",
+        "op": "read",
+        "sql": "SELECT v FROM kv WHERE k = 'a'"
+      },
+      {
+        "s": "T1",
+        "op": "writeFromRead",
+        "sql": "UPDATE kv SET v = $LAST + 10 WHERE k = 'a'"
+      },
+      {
+        "s": "T2",
+        "op": "writeFromRead",
+        "sql": "UPDATE kv SET v = $LAST + 20 WHERE k = 'a'"
+      },
+      {
+        "s": "T1",
+        "op": "commit",
+        "sql": "COMMIT"
+      },
+      {
+        "s": "T2",
+        "op": "commit",
+        "sql": "COMMIT"
+      }
+    ],
+    "expected": {
+      "values": {
+        "T1": [
+          100
+        ],
+        "T2": [
+          100
+        ]
+      },
+      "final": {
+        "a": 120
+      },
+      "aborted": []
+    }
+  },
+  {
+    "id": "lostupdate @ repeatable read",
+    "title": "Потерянное обновление",
+    "level": "repeatable read",
+    "initial": {
+      "a": 100
+    },
+    "steps": [
+      {
+        "s": "T1",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL REPEATABLE READ"
+      },
+      {
+        "s": "T2",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL REPEATABLE READ"
+      },
+      {
+        "s": "T1",
+        "op": "read",
+        "sql": "SELECT v FROM kv WHERE k = 'a'"
+      },
+      {
+        "s": "T2",
+        "op": "read",
+        "sql": "SELECT v FROM kv WHERE k = 'a'"
+      },
+      {
+        "s": "T1",
+        "op": "writeFromRead",
+        "sql": "UPDATE kv SET v = $LAST + 10 WHERE k = 'a'"
+      },
+      {
+        "s": "T2",
+        "op": "writeFromRead",
+        "sql": "UPDATE kv SET v = $LAST + 20 WHERE k = 'a'"
+      },
+      {
+        "s": "T1",
+        "op": "commit",
+        "sql": "COMMIT"
+      },
+      {
+        "s": "T2",
+        "op": "commit",
+        "sql": "COMMIT"
+      }
+    ],
+    "expected": {
+      "values": {
+        "T1": [
+          100
+        ],
+        "T2": [
+          100
+        ]
+      },
+      "final": {
+        "a": 110
+      },
+      "aborted": [
+        "T2"
+      ]
+    }
+  },
+  {
+    "id": "lostupdate @ serializable",
+    "title": "Потерянное обновление",
+    "level": "serializable",
+    "initial": {
+      "a": 100
+    },
+    "steps": [
+      {
+        "s": "T1",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL SERIALIZABLE"
+      },
+      {
+        "s": "T2",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL SERIALIZABLE"
+      },
+      {
+        "s": "T1",
+        "op": "read",
+        "sql": "SELECT v FROM kv WHERE k = 'a'"
+      },
+      {
+        "s": "T2",
+        "op": "read",
+        "sql": "SELECT v FROM kv WHERE k = 'a'"
+      },
+      {
+        "s": "T1",
+        "op": "writeFromRead",
+        "sql": "UPDATE kv SET v = $LAST + 10 WHERE k = 'a'"
+      },
+      {
+        "s": "T2",
+        "op": "writeFromRead",
+        "sql": "UPDATE kv SET v = $LAST + 20 WHERE k = 'a'"
+      },
+      {
+        "s": "T1",
+        "op": "commit",
+        "sql": "COMMIT"
+      },
+      {
+        "s": "T2",
+        "op": "commit",
+        "sql": "COMMIT"
+      }
+    ],
+    "expected": {
+      "values": {
+        "T1": [
+          100
+        ],
+        "T2": [
+          100
+        ]
+      },
+      "final": {
+        "a": 110
+      },
+      "aborted": [
+        "T2"
+      ]
+    }
+  },
+  {
+    "id": "lostupdate-lock @ read committed",
+    "title": "Потерянное обновление и FOR UPDATE",
+    "level": "read committed",
+    "initial": {
+      "a": 100
+    },
+    "steps": [
+      {
+        "s": "T1",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL READ COMMITTED"
+      },
+      {
+        "s": "T2",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL READ COMMITTED"
+      },
+      {
+        "s": "T1",
+        "op": "forUpdate",
+        "sql": "SELECT v FROM kv WHERE k = 'a' FOR UPDATE"
+      },
+      {
+        "s": "T2",
+        "op": "forUpdate",
+        "sql": "SELECT v FROM kv WHERE k = 'a' FOR UPDATE"
+      },
+      {
+        "s": "T1",
+        "op": "writeFromRead",
+        "sql": "UPDATE kv SET v = $LAST + 10 WHERE k = 'a'"
+      },
+      {
+        "s": "T1",
+        "op": "commit",
+        "sql": "COMMIT"
+      },
+      {
+        "s": "T2",
+        "op": "writeFromRead",
+        "sql": "UPDATE kv SET v = $LAST + 20 WHERE k = 'a'"
+      },
+      {
+        "s": "T2",
+        "op": "commit",
+        "sql": "COMMIT"
+      }
+    ],
+    "expected": {
+      "values": {
+        "T1": [
+          100
+        ],
+        "T2": [
+          null,
+          110
+        ]
+      },
+      "final": {
+        "a": 130
+      },
+      "aborted": []
+    }
+  },
+  {
+    "id": "lostupdate-lock @ repeatable read",
+    "title": "Потерянное обновление и FOR UPDATE",
+    "level": "repeatable read",
+    "initial": {
+      "a": 100
+    },
+    "steps": [
+      {
+        "s": "T1",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL REPEATABLE READ"
+      },
+      {
+        "s": "T2",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL REPEATABLE READ"
+      },
+      {
+        "s": "T1",
+        "op": "forUpdate",
+        "sql": "SELECT v FROM kv WHERE k = 'a' FOR UPDATE"
+      },
+      {
+        "s": "T2",
+        "op": "forUpdate",
+        "sql": "SELECT v FROM kv WHERE k = 'a' FOR UPDATE"
+      },
+      {
+        "s": "T1",
+        "op": "writeFromRead",
+        "sql": "UPDATE kv SET v = $LAST + 10 WHERE k = 'a'"
+      },
+      {
+        "s": "T1",
+        "op": "commit",
+        "sql": "COMMIT"
+      },
+      {
+        "s": "T2",
+        "op": "writeFromRead",
+        "sql": "UPDATE kv SET v = $LAST + 20 WHERE k = 'a'"
+      },
+      {
+        "s": "T2",
+        "op": "commit",
+        "sql": "COMMIT"
+      }
+    ],
+    "expected": {
+      "values": {
+        "T1": [
+          100
+        ],
+        "T2": [
+          null
+        ]
+      },
+      "final": {
+        "a": 110
+      },
+      "aborted": [
+        "T2"
+      ]
+    }
+  },
+  {
+    "id": "lostupdate-lock @ serializable",
+    "title": "Потерянное обновление и FOR UPDATE",
+    "level": "serializable",
+    "initial": {
+      "a": 100
+    },
+    "steps": [
+      {
+        "s": "T1",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL SERIALIZABLE"
+      },
+      {
+        "s": "T2",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL SERIALIZABLE"
+      },
+      {
+        "s": "T1",
+        "op": "forUpdate",
+        "sql": "SELECT v FROM kv WHERE k = 'a' FOR UPDATE"
+      },
+      {
+        "s": "T2",
+        "op": "forUpdate",
+        "sql": "SELECT v FROM kv WHERE k = 'a' FOR UPDATE"
+      },
+      {
+        "s": "T1",
+        "op": "writeFromRead",
+        "sql": "UPDATE kv SET v = $LAST + 10 WHERE k = 'a'"
+      },
+      {
+        "s": "T1",
+        "op": "commit",
+        "sql": "COMMIT"
+      },
+      {
+        "s": "T2",
+        "op": "writeFromRead",
+        "sql": "UPDATE kv SET v = $LAST + 20 WHERE k = 'a'"
+      },
+      {
+        "s": "T2",
+        "op": "commit",
+        "sql": "COMMIT"
+      }
+    ],
+    "expected": {
+      "values": {
+        "T1": [
+          100
+        ],
+        "T2": [
+          null
+        ]
+      },
+      "final": {
+        "a": 110
+      },
+      "aborted": [
+        "T2"
+      ]
+    }
+  },
+  {
+    "id": "writeskew @ read committed",
+    "title": "Write skew (перекос записи)",
+    "level": "read committed",
+    "initial": {
+      "a": 1,
+      "b": 1
+    },
+    "steps": [
+      {
+        "s": "T1",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL READ COMMITTED"
+      },
+      {
+        "s": "T2",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL READ COMMITTED"
+      },
+      {
+        "s": "T1",
+        "op": "read",
+        "sql": "SELECT v FROM kv WHERE k = 'a'"
+      },
+      {
+        "s": "T1",
+        "op": "read",
+        "sql": "SELECT v FROM kv WHERE k = 'b'"
+      },
+      {
+        "s": "T2",
+        "op": "read",
+        "sql": "SELECT v FROM kv WHERE k = 'a'"
+      },
+      {
+        "s": "T2",
+        "op": "read",
+        "sql": "SELECT v FROM kv WHERE k = 'b'"
+      },
+      {
+        "s": "T1",
+        "op": "write",
+        "sql": "UPDATE kv SET v = 0 WHERE k = 'a'"
+      },
+      {
+        "s": "T2",
+        "op": "write",
+        "sql": "UPDATE kv SET v = 0 WHERE k = 'b'"
+      },
+      {
+        "s": "T1",
+        "op": "commit",
+        "sql": "COMMIT"
+      },
+      {
+        "s": "T2",
+        "op": "commit",
+        "sql": "COMMIT"
+      }
+    ],
+    "expected": {
+      "values": {
+        "T1": [
+          1,
+          1
+        ],
+        "T2": [
+          1,
+          1
+        ]
+      },
+      "final": {
+        "a": 0,
+        "b": 0
+      },
+      "aborted": []
+    }
+  },
+  {
+    "id": "writeskew @ repeatable read",
+    "title": "Write skew (перекос записи)",
+    "level": "repeatable read",
+    "initial": {
+      "a": 1,
+      "b": 1
+    },
+    "steps": [
+      {
+        "s": "T1",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL REPEATABLE READ"
+      },
+      {
+        "s": "T2",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL REPEATABLE READ"
+      },
+      {
+        "s": "T1",
+        "op": "read",
+        "sql": "SELECT v FROM kv WHERE k = 'a'"
+      },
+      {
+        "s": "T1",
+        "op": "read",
+        "sql": "SELECT v FROM kv WHERE k = 'b'"
+      },
+      {
+        "s": "T2",
+        "op": "read",
+        "sql": "SELECT v FROM kv WHERE k = 'a'"
+      },
+      {
+        "s": "T2",
+        "op": "read",
+        "sql": "SELECT v FROM kv WHERE k = 'b'"
+      },
+      {
+        "s": "T1",
+        "op": "write",
+        "sql": "UPDATE kv SET v = 0 WHERE k = 'a'"
+      },
+      {
+        "s": "T2",
+        "op": "write",
+        "sql": "UPDATE kv SET v = 0 WHERE k = 'b'"
+      },
+      {
+        "s": "T1",
+        "op": "commit",
+        "sql": "COMMIT"
+      },
+      {
+        "s": "T2",
+        "op": "commit",
+        "sql": "COMMIT"
+      }
+    ],
+    "expected": {
+      "values": {
+        "T1": [
+          1,
+          1
+        ],
+        "T2": [
+          1,
+          1
+        ]
+      },
+      "final": {
+        "a": 0,
+        "b": 0
+      },
+      "aborted": []
+    }
+  },
+  {
+    "id": "writeskew @ serializable",
+    "title": "Write skew (перекос записи)",
+    "level": "serializable",
+    "initial": {
+      "a": 1,
+      "b": 1
+    },
+    "steps": [
+      {
+        "s": "T1",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL SERIALIZABLE"
+      },
+      {
+        "s": "T2",
+        "op": "begin",
+        "sql": "BEGIN ISOLATION LEVEL SERIALIZABLE"
+      },
+      {
+        "s": "T1",
+        "op": "read",
+        "sql": "SELECT v FROM kv WHERE k = 'a'"
+      },
+      {
+        "s": "T1",
+        "op": "read",
+        "sql": "SELECT v FROM kv WHERE k = 'b'"
+      },
+      {
+        "s": "T2",
+        "op": "read",
+        "sql": "SELECT v FROM kv WHERE k = 'a'"
+      },
+      {
+        "s": "T2",
+        "op": "read",
+        "sql": "SELECT v FROM kv WHERE k = 'b'"
+      },
+      {
+        "s": "T1",
+        "op": "write",
+        "sql": "UPDATE kv SET v = 0 WHERE k = 'a'"
+      },
+      {
+        "s": "T2",
+        "op": "write",
+        "sql": "UPDATE kv SET v = 0 WHERE k = 'b'"
+      },
+      {
+        "s": "T1",
+        "op": "commit",
+        "sql": "COMMIT"
+      },
+      {
+        "s": "T2",
+        "op": "commit",
+        "sql": "COMMIT"
+      }
+    ],
+    "expected": {
+      "values": {
+        "T1": [
+          1,
+          1
+        ],
+        "T2": [
+          1,
+          1
+        ]
+      },
+      "final": {
+        "a": 0,
+        "b": 1
+      },
+      "aborted": [
+        "T2"
+      ]
+    }
+  }
+]

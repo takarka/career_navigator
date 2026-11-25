@@ -32,3 +32,16 @@ jobs:
           node-version: 22
       - name: Лаборатории модуля 8 на живых брокерах
         run: bash labs/scripts/run-broker-labs.sh
+
+  postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Изоляция транзакций: модель против реального PostgreSQL
+        run: |
+          cd labs && docker compose up -d --wait postgres
+          cd m03/isolation && npm install --no-audit --no-fund && npm test

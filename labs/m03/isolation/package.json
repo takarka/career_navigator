@@ -1,0 +1,1 @@
+{ "name": "lab-m03-isolation", "private": true, "scripts": { "test": "node test.cjs" }, "dependencies": { "pg": "^8.13.0" } }

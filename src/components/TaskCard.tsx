@@ -62,6 +62,7 @@ export function TaskCard({ task }: { task: Task }) {
       )}
       {task.widget && <LazyWidget name={task.widget.name} props={{ ...(task.widget.props ?? {}), taskId: task.id }} />}
       {task.exercise && <Sandbox exercise={task.exercise} taskId={task.id} />}
+      {task.sqlExercise && <LazyWidget name="sql-sandbox" props={{ exercise: task.sqlExercise, taskId: task.id }} />}
       {task.testExercise && <LazyWidget name="test-exercise" props={{ ex: task.testExercise, taskId: task.id }} />}
       {task.hints && task.hints.length > 0 && (
         <div class="hints">

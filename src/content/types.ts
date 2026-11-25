@@ -17,6 +17,22 @@ export interface TestExercise {
   solution?: string;
 }
 
+/**
+ * SQL-задание на PGlite. kind 'result' — запрос должен вернуть ожидаемый результат;
+ * kind 'plan' — после выполнения скрипта пользователя EXPLAIN целевого запроса должен содержать узел с нужным типом.
+ */
+export interface SqlExercise {
+  dataset: string;
+  starter: string;
+  solution: string;
+  kind?: 'result' | 'plan';
+  expected?: { columns: string[]; rows: unknown[][] };
+  orderMatters?: boolean;
+  /** Для kind 'plan': запрос, план которого проверяется, и регулярное выражение для типа узла. */
+  planQuery?: string;
+  planNode?: string;
+}
+
 export interface CommandItem {
   cmd: string;
   note?: string;
@@ -36,6 +52,7 @@ export interface Task {
   widget?: { name: string; props?: Record<string, unknown> };
   exercise?: Exercise;
   testExercise?: TestExercise;
+  sqlExercise?: SqlExercise;
 }
 
 export interface QuizQuestion {

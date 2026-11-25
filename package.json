@@ -15,12 +15,14 @@
     "lint:content": "tsx tools/lint-content.ts",
     "check:size": "node tools/check-size.mjs dist",
     "record:traces": "tsx tools/record-traces.ts",
-    "bank": "tsx tools/build-question-bank.ts"
+    "bank": "tsx tools/build-question-bank.ts",
+    "gen:labs:m03": "tsx tools/gen-labs-m03.ts"
   },
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.5",
     "@codemirror/state": "^6.7.6",
     "@codemirror/theme-one-dark": "^6.1.3",
+    "@electric-sql/pglite": "^0.6.0",
     "codemirror": "^6.0.2",
     "marked": "^18.3.0",
     "preact": "^11.2.0"

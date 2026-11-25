@@ -35,6 +35,10 @@ export const widgetLoaders: Record<string, () => Promise<AnyComponent>> = {
   'saga-viz': () => import('./BrokerWidgets.tsx').then((m) => m.SagaViz),
   'idempotency-compare': () => import('./BrokerWidgets.tsx').then((m) => m.IdempotencyCompare),
   'retry-planner': () => import('./BrokerWidgets.tsx').then((m) => m.RetryPlanner),
+  'sql-sandbox': () => import('./SqlSandbox.tsx').then((m) => m.SqlSandbox),
+  'btree-viz': () => import('./DbWidgets.tsx').then((m) => m.BTreeViz),
+  'isolation-sim': () => import('./DbWidgets.tsx').then((m) => m.IsolationSim),
+  'deadlock-timeline': () => import('./DbWidgets.tsx').then((m) => m.DeadlockTimeline),
   'test-exercise': () => import('./TestExerciseView.tsx').then((m) => m.TestExerciseView),
 };
 
