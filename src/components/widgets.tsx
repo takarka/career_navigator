@@ -51,6 +51,9 @@ export const widgetLoaders: Record<string, () => Promise<AnyComponent>> = {
   'jwt-playground': () => import('./RestWidgets.tsx').then((m) => m.JwtPlayground),
   'flame-graph': () => import('./PerfWidgets.tsx').then((m) => m.FlameGraph),
   'queue-curve': () => import('./PerfWidgets.tsx').then((m) => m.QueueCurve),
+  'self-assess': () => import('./SelfAssess.tsx').then((m) => m.SelfAssess),
+  'breaker-demo': () => import('./ArchWidgets.tsx').then((m) => m.BreakerDemo),
+  'docker-cache': () => import('./ArchWidgets.tsx').then((m) => m.DockerCacheDemo),
   'test-exercise': () => import('./TestExerciseView.tsx').then((m) => m.TestExerciseView),
 };
 

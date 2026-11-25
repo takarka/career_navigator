@@ -376,3 +376,7 @@ label:has(> select) { display: inline-flex; flex-direction: column; gap: 4px; ma
 .nest-order li.hand { color: var(--ok); }
 .nestmod { border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; background: var(--surface); }
 .flame-scroll { overflow-x: auto; max-width: 100%; position: relative; }
+.dockerfile { list-style: none; padding: 0; font-family: ui-monospace, monospace; font-size: 0.9rem; }
+.dockerfile li { padding: 3px 8px; border-left: 4px solid var(--border); margin: 2px 0; overflow-wrap: anywhere; }
+.dockerfile li.rebuilt { border-color: var(--bad); background: var(--bad-soft); }
+.dockerfile li.cached { border-color: var(--ok); background: var(--ok-soft); }
