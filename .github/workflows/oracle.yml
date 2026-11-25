@@ -61,3 +61,16 @@ jobs:
           cd m13/capstone-nest && npm install --no-audit --no-fund
           cd ../../.. && DATABASE_URL=postgres://lab:lab@localhost:5432/lab AMQP_URL=amqp://guest:guest@localhost:5672 npx tsx --tsconfig labs/m13/capstone-nest/tsconfig.json labs/m13/capstone-nest/test.ts
           DATABASE_URL=postgres://lab:lab@localhost:5432/lab KAFKA_BROKERS=localhost:9092 npx tsx --tsconfig labs/m13/capstone-nest/tsconfig.json labs/m13/capstone-nest/test.ts
+
+  nest-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 'Код модуля 6: ValidationPipe, ConfigModule, TypeORM на PostgreSQL'
+        run: |
+          cd labs && docker compose up -d --wait postgres
+          cd m06/nest-check && npm install --no-audit --no-fund && npm test

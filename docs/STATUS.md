@@ -49,6 +49,7 @@
 | `labs/scripts/smoke.sh`: postgres 17, redis 7, rabbitmq 4, apache/kafka 4.4.0 | все четыре сервиса healthy и отвечают |
 | `labs/scripts/run-broker-labs.sh`: `m08/rabbitmq/basic`, `retry-dlq`, `m08/kafka/consumer-group` | заготовка падает, решение проходит. Нашли ошибку лаборатории Kafka: при 4 пользователях и 4 партициях круговая раздача без ключа случайно давала порядок, заготовка проходила; теперь 3 пользователя |
 | Оракул изоляции `labs/m03/isolation` на PostgreSQL 17 | 15 из 15 сценариев совпадают. Нашли ошибку генератора ожиданий (заблокированный шаг писал пустое значение); исправлена |
+| Код модуля 6 (`labs/m06/nest-check`): ValidationPipe, @nestjs/config, TypeORM на PostgreSQL 17 | собран `tsc` с `emitDecoratorMetadata`; 201/400, вложенная валидация, отказ старта без переменной окружения проходят |
 | Мини-Redis против `redis-server` 7.0.15 (`src/engine/miniredis.oracle.test.ts`) | ответы на 69 команд (строки, списки, хеши, множества, zset, TTL, ошибки WRONGTYPE) совпадают |
 | Эталон `labs/m13/capstone-nest` на PostgreSQL 17 и RabbitMQ 4 (`AMQP_URL`) или Kafka 4.4 (`KAFKA_BROKERS`) | приёмка контракта, Outbox → брокер → потребитель с inbox, Fault, таймаут, ретраи, rate limit проходят; повторная доставка одного сообщения отбрасывается inbox |
 | Примеры Dockerfile (одно- и многоэтапный) и compose из модуля 7 | собираются, процесс от `node`, SIGTERM даёт выход 0; форма-строка `CMD` даёт PID 1 = `/bin/sh` и выход 137 через 5 с |
@@ -66,7 +67,7 @@
 
 ## Что НЕ проверено запуском
 
-1. Код с `ValidationPipe`/`class-validator`/`@nestjs/config`/ORM в уроках модуля 6: приведён по документации и не запускался.
+1. Интеграции Zod и OpenAPI из уроков модуля 6 и `@nestjs/swagger`: по документации, не запускались.
 2. Симулятор RabbitMQ (кроме сверки лабораторий): модель без оракула на живом брокере.
 3. Workflow `pages.yml`: на GitHub не запускался (срабатывает при пуше в `main`; публикует сайт).
 

@@ -22,7 +22,7 @@
 | m03-l07: инструменты миграций для Node.js | перечислены без проверки актуальности | выбрать по стеку проекта, сверив с документацией |
 | Модуль 4: терминал и симуляторы Redis | ответы мини-Redis на 69 команд сверены с настоящим redis-server 7.0.15 (`src/engine/miniredis.oracle.test.ts`); лаборатория `labs/m04/lock` на живом Redis; симуляторы rate limit и кэша — модели без оракула | при добавлении команд расширять сценарий сверки |
 | m04-l05: актуальные рекомендации по Redlock | упомянут без сверки с документацией Redis | сверить с redis.io/docs |
-| Модуль 6: ValidationPipe, class-validator, @nestjs/config, TypeORM-примеры | код в уроках приведён по документации и НЕ запускался (ValidationPipe требует emitDecoratorMetadata, которого нет у esbuild/vitest) | собрать пример-проект через tsc/SWC и прогнать в CI; проверить версии пакетов |
+| Модуль 6: ValidationPipe, class-validator, @nestjs/config, TypeORM-примеры | проверено запуском 2026-11-25 (`labs/m06/nest-check`: tsc с emitDecoratorMetadata, class-validator 0.15, @nestjs/config 12, TypeORM 1.1, PostgreSQL 17); Zod и OpenAPI не проверялись | закрыто для ValidationPipe, Config, TypeORM
 | m06-l03 и m06-l04: интеграция Zod и OpenAPI, выбор ORM | рекомендации не сверены с актуальной документацией | сверить на момент выбора |
 | m05-l01: статус спецификации Idempotency-Key | заголовок описан в черновике IETF; актуальность не сверялась | сверить на datatracker.ietf.org |
 | m05-l04: настройка @nestjs/swagger и плагина CLI | не проверялась запуском | собрать пример и проверить |
