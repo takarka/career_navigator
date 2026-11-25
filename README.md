@@ -12,6 +12,7 @@
 npm install
 npm run dev              # режим разработки
 npm run build            # статический сайт в dist/ (используется для GitHub Pages)
+npm run build:offline    # dist-offline: полностью офлайн, вместе с SQL-песочницей (node dist-offline/serve.mjs)
 npm run build:single     # один HTML-файл dist-single/index.html (открывается двойным кликом; без SQL-песочницы)
 npm test                 # автотесты: модели против реальных Node.js, NestJS, PostgreSQL (PGlite), kafkajs
 npm run lint:content     # проверка полноты и целостности уроков

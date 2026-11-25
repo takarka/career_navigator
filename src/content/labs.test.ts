@@ -73,6 +73,12 @@ describe('лаборатории', () => {
     expect(solution.status, solution.stdout + solution.stderr).toBe(0);
   });
 
+  it('m13: эталон capstone (SQLite, Outbox, SOAP-мок) проходит свои тесты', { timeout: 60000 }, () => {
+    const env = { ...process.env, NODE_NO_WARNINGS: '1' };
+    const r = spawnSync(process.execPath, ['test.cjs'], { cwd: join(labs, 'm13/capstone-reference'), encoding: 'utf8', env, timeout: 60000 });
+    expect(r.status, r.stdout + r.stderr).toBe(0);
+  });
+
   it('m13: приёмочные тесты проходят на эталоне контракта', { timeout: 60000 }, async () => {
     const { createRequire } = await import('node:module');
     const req = createRequire(import.meta.url);

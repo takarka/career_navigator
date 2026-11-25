@@ -1,1 +1,1 @@
-{ "name": "capstone-reference-contract", "private": true, "scripts": { "start": "node server.cjs" } }
+{ "name": "capstone-reference", "private": true, "scripts": { "start": "node server.cjs", "test": "node test.cjs" } }

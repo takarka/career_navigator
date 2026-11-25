@@ -17,6 +17,7 @@
     "record:traces": "tsx tools/record-traces.ts",
     "bank": "tsx tools/build-question-bank.ts",
     "gen:labs:m03": "tsx tools/gen-labs-m03.ts",
+    "build:offline": "node tools/build-offline.mjs",
     "serve": "node tools/serve.mjs dist 4173",
     "gen:profile": "tsx tools/gen-sample-profile.ts"
   },

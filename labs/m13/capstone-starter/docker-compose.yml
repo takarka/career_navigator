@@ -1,0 +1,15 @@
+# Не проверялось запуском (нет Docker-демона при подготовке). Проверка: docker compose up --wait
+services:
+  postgres:
+    image: postgres:17
+    environment: { POSTGRES_USER: app, POSTGRES_PASSWORD: app, POSTGRES_DB: app }
+    ports: ['5432:5432']
+    healthcheck: { test: ['CMD-SHELL', 'pg_isready -U app -d app'], interval: 5s, timeout: 3s, retries: 10 }
+  redis:
+    image: redis:7
+    ports: ['6379:6379']
+    healthcheck: { test: ['CMD', 'redis-cli', 'ping'], interval: 5s, timeout: 3s, retries: 10 }
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports: ['5672:5672', '15672:15672']
+    healthcheck: { test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping'], interval: 10s, timeout: 5s, retries: 10 }

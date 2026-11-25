@@ -55,7 +55,7 @@ export const capstoneDelivery: Lesson = {
   blocks: [
     { t: 'md', text: `## Главное за минуту
 
-Реализуйте проект по этапам; каждый этап заканчивается проверяемым результатом. В \`labs/m13/acceptance\` есть приёмочные тесты **HTTP-контракта** (запуск: \`BASE_URL=http://127.0.0.1:3000 node labs/m13/acceptance/test.cjs\`), а в \`labs/m13/capstone-reference\` — минимальный эталон контракта в памяти. Полноценного эталона (NestJS, БД, брокер, SOAP) нет: Outbox, брокер, интеграцию и graceful shutdown проверяйте своими тестами по чек-листам.
+Реализуйте проект по этапам; каждый этап заканчивается проверяемым результатом. В \`labs/m13/acceptance\` есть приёмочные тесты **HTTP-контракта** (запуск: \`BASE_URL=http://127.0.0.1:3000 node labs/m13/acceptance/test.cjs\`), в \`labs/m13/capstone-starter\` — заготовка (схема, compose, список сценариев), в \`labs/m13/capstone-reference\` — эталон без NestJS: SQLite, Outbox, воркер отправки в SOAP-мок, ретраи, Fault, таймаут (смотрите после собственной попытки). Эталон не использует NestJS и настоящий брокер, а graceful shutdown, rate limit и WebSocket в нём не реализованы: их проверяйте своими тестами.
 
 | Этап | Результат | Модули |
 |---|---|---|
