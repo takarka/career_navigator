@@ -361,3 +361,10 @@ label:has(> select) { display: inline-flex; flex-direction: column; gap: 4px; ma
 .bnode.hl { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .bkey { padding: 1px 6px; border-radius: 4px; background: var(--surface-2); font-family: ui-monospace, monospace; font-size: 0.9rem; }
 .isosim select { font: inherit; padding: 4px 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: inherit; }
+.term { background: #0f131b; color: #e6e9f0; border-radius: 8px; padding: 10px 12px; max-height: 320px; overflow: auto; font-family: ui-monospace, monospace; font-size: 0.88rem; margin-bottom: 8px; }
+.term pre { margin: 2px 0 6px; white-space: pre-wrap; color: #b5e8c4; background: transparent; border: 0; padding: 0; }
+.term .prompt { color: #9cb5ff; }
+.rl-strip { display: flex; flex-wrap: wrap; gap: 2px; margin: 8px 0; }
+.rl { display: inline-block; width: 12px; height: 18px; border-radius: 2px; }
+.rl.ok { background: var(--ok); }
+.rl.no { background: var(--bad); }
