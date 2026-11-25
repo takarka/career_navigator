@@ -125,6 +125,7 @@ await page.setViewport({ width: 1280, height: 900 });
 await sleep(800);
 await page.goto(base, { waitUntil: 'networkidle0' });
 await page.goto(base + '#/lesson/m01-l02', { waitUntil: 'networkidle0' });
+await page.waitForSelector('.notes textarea', { timeout: 8000 });
 await sleep(400);
 check('toc rendered', !!(await page.$('.toc li button')));
 const fullCount = (await page.$$('.lesson .md')).length;
@@ -137,10 +138,13 @@ await page.type('.notes textarea', 'моя заметка');
 await sleep(100);
 await page.goto(base + '#/sandbox', { waitUntil: 'networkidle0' });
 await page.goto(base + '#/lesson/m01-l02', { waitUntil: 'networkidle0' });
+await page.waitForSelector('.notes textarea', { timeout: 8000 });
 check('note persists', (await page.$eval('.notes textarea', (e) => e.value)) === 'моя заметка');
 await page.goto(base + '#/search/' + encodeURIComponent('nextTick'), { waitUntil: 'networkidle0' });
+await page.waitForSelector('.hits li', { timeout: 5000 }).catch(() => {});
 check('search finds lesson', (await page.$$('.hits li')).length >= 1);
 await page.goto(base + '#/search/' + encodeURIComponent('zzzнетакого'), { waitUntil: 'networkidle0' });
+await sleep(600);
 check('search empty state', (await page.$('.hits')) === null);
 
 // --- Фаза B: демо общих компонентов
@@ -161,9 +165,42 @@ await sleep(1200);
 const starterRes = await page.$eval('.test-exercise .result', (e) => e.textContent).catch(() => '');
 check('demo: starter code fails tests', starterRes.includes('Пройдено 0 из 3'), starterRes.slice(0, 40));
 
+// --- Фаза C: подготовка к собеседованию
+await page.goto(base + '#/practice/interview', { waitUntil: 'networkidle0' });
+await sleep(500);
+await page.evaluate(() => [...document.querySelectorAll('.mock button')].find((b) => b.textContent.includes('Начать интервью')).click());
+await sleep(200);
+check('mock: question shown without reference', !!(await page.$('.mock h3')) && !(await page.$('.mock .reference')));
+await page.type('#mock-answer', 'мой ответ на вопрос');
+await page.evaluate(() => [...document.querySelectorAll('.mock button')].find((b) => b.textContent.includes('Отправить и показать эталон')).click());
+await sleep(200);
+check('mock: reference revealed after answer', !!(await page.$('.mock .reference')));
+await page.evaluate(() => document.querySelector('.mock .check-line input').click());
+await sleep(100);
+check('mock: self-score shown', (await page.$eval('.mock fieldset', (e) => e.textContent)).includes('из 10'));
+
+await page.goto(base + '#/practice/flashcards', { waitUntil: 'networkidle0' });
+await sleep(500);
+check('flashcards: card shown', !!(await page.$('.flash .card-face h3')));
+await page.evaluate(() => [...document.querySelectorAll('.flash button')].find((b) => b.textContent.includes('Показать ключевые пункты')).click());
+await sleep(100);
+await page.evaluate(() => [...document.querySelectorAll('.flash button')].find((b) => b.textContent === 'Знаю').click());
+await sleep(150);
+check('flashcards: box counters updated', (await page.$eval('.flash p.muted', (e) => e.textContent)).includes('1 ·'));
+
+await page.goto(base + '#/practice/star', { waitUntil: 'networkidle0' });
+await sleep(500);
+await page.type('#star-optimization-result', 'p95 снизился с 800 до 200 мс');
+await sleep(100);
+check('star: result check passes with number', (await page.$$eval('.star .checks li.ok', (l) => l.length)) >= 1);
+
+await page.goto(base + '#/lesson/m14-l03', { waitUntil: 'networkidle0' });
+await sleep(600);
+check('m14-l03: 4 live-coding test exercises', (await page.$$('.test-exercise')).length === 4);
+
 for (const w of [360, 390, 768]) {
   await page.setViewport({ width: w, height: 800 });
-  for (const hash of ['#/', '#/module/m01', '#/lesson/m01-l02', '#/sandbox']) {
+  for (const hash of ['#/', '#/module/m01', '#/lesson/m01-l02', '#/sandbox', '#/practice/interview']) {
     await page.goto(base + hash, { waitUntil: 'networkidle0' });
     await sleep(250);
     const o = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -173,7 +210,7 @@ for (const w of [360, 390, 768]) {
 
 await page.setViewport({ width: 1280, height: 900 });
 for (const theme of ['light', 'dark']) {
-  for (const hash of ['#/', '#/module/m01', '#/lesson/m01-l02', '#/sandbox', '#/demo']) {
+  for (const hash of ['#/', '#/module/m01', '#/lesson/m01-l02', '#/sandbox', '#/demo', '#/practice/interview', '#/practice/flashcards', '#/practice/star', '#/practice/intro', '#/lesson/m14-l01', '#/lesson/m14-l03', '#/lesson/m14-l04']) {
     await page.goto(base + hash, { waitUntil: 'networkidle0' });
     await page.evaluate((t) => {
       const k = 'nodejs-textbook:v1';

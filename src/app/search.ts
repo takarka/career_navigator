@@ -1,5 +1,5 @@
 import { flatLessons } from '../content/modules.ts';
-import { lessons } from '../content/lessons.ts';
+import { loadAllLessons } from '../content/lessons.ts';
 import { blockText } from '../content/text.ts';
 
 export interface Hit {
@@ -19,12 +19,14 @@ interface Doc {
 
 let index: Doc[] | null = null;
 
-function build(): Doc[] {
-  return flatLessons().map(({ module: m, ref }) => ({
+export async function ensureIndex(): Promise<void> {
+  if (index) return;
+  const byId = new Map((await loadAllLessons()).map((l) => [l.id, l]));
+  index = flatLessons().map(({ module: m, ref }) => ({
     lessonId: ref.id,
     title: ref.title,
     moduleTitle: m.title,
-    text: lessons[ref.id] ? lessons[ref.id].blocks.map(blockText).join('\n') : (ref.summary ?? ''),
+    text: byId.get(ref.id) ? byId.get(ref.id)!.blocks.map(blockText).join('\n') : (ref.summary ?? ''),
   }));
 }
 
@@ -33,7 +35,7 @@ const clean = (s: string) => s.replace(/[`*_>#|]/g, '').replace(/\s+/g, ' ');
 export function search(query: string): Hit[] {
   const words = query.toLowerCase().split(/\s+/).filter((w) => w.length > 1);
   if (!words.length) return [];
-  index ??= build();
+  if (!index) return [];
   const hits: Hit[] = [];
   for (const d of index) {
     const title = d.title.toLowerCase();

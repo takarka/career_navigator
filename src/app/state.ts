@@ -96,3 +96,29 @@ export function setDetail(on: boolean) {
     p.detail = on;
   });
 }
+
+export function saveInterview(session: import('./migrate.ts').InterviewSession) {
+  update((p) => {
+    const i = p.interviewHistory.findIndex((s) => s.id === session.id);
+    if (i >= 0) p.interviewHistory[i] = session;
+    else p.interviewHistory.push(session);
+  });
+}
+
+export function setCard(id: string, state: { box: number; due: string }) {
+  update((p) => {
+    p.flashcards[id] = state;
+  });
+}
+
+export function setStory(id: string, story: import('./migrate.ts').StarStory) {
+  update((p) => {
+    p.stories[id] = story;
+  });
+}
+
+export function setSelfAssessment(topic: string, value: number) {
+  update((p) => {
+    p.selfAssessment[topic] = value;
+  });
+}

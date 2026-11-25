@@ -13,6 +13,12 @@ export const widgetLoaders: Record<string, () => Promise<AnyComponent>> = {
   'predict-output': () => import('./PredictGame.tsx').then((m) => m.PredictGame),
   sandbox: () => import('./Sandbox.tsx').then((m) => m.Sandbox),
   'demo-page': () => import('../app/demo.tsx').then((m) => m.DemoPage),
+  'mock-interview': () => import('./MockInterview.tsx').then((m) => m.MockInterview),
+  flashcards: () => import('./Flashcards.tsx').then((m) => m.Flashcards),
+  'star-builder': () => import('./StarBuilder.tsx').then((m) => m.StarBuilder),
+  'intro-builder': () => import('./IntroBuilder.tsx').then((m) => m.IntroBuilder),
+  'diagram-canvas': () => import('./DiagramCanvas.tsx').then((m) => m.DiagramCanvas),
+  'salary-table': () => import('./SalaryTable.tsx').then((m) => m.SalaryTable),
   'test-exercise': () => import('./TestExerciseView.tsx').then((m) => m.TestExerciseView),
 };
 

@@ -148,7 +148,15 @@ console.log('4');
 `,
           expected: ['a', 'b', 'c', 'готово'],
           settleMs: 400,
-          solution: `Promise.all([wait(30, 'c'), wait(10, 'a'), wait(20, 'b')]).then(() => console.log('готово'));`,
+          solution: `const wait = (ms, name) =>
+  new Promise((resolve) => {
+    setTimeout(() => {
+      console.log(name);
+      resolve();
+    }, ms);
+  });
+
+Promise.all([wait(30, 'c'), wait(10, 'a'), wait(20, 'b')]).then(() => console.log('готово'));`,
         },
         hints: ['Нужен комбинатор промисов, который ждёт все сразу.', 'Если запускать задачи по очереди через `await`, суммарное время сложится.'],
       },

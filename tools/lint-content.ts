@@ -1,7 +1,8 @@
 // Линтер контента: целостность и полнота готовых уроков (раздел 11.3 HANDOFF).
 import { existsSync, readFileSync } from 'node:fs';
 import { modules } from '../src/content/modules.ts';
-import { lessons } from '../src/content/lessons.ts';
+import { loadAllLessons } from '../src/content/lessons.ts';
+import { lessonLoaders } from '../src/content/lessons.ts';
 import { widgetLoaders } from '../src/components/widgets.tsx';
 import { blockText } from '../src/content/text.ts';
 import type { Block, Task } from '../src/content/types.ts';
@@ -46,10 +47,11 @@ function checkTask(where: string, t: Task) {
   if (t.widget && !widgetLoaders[t.widget.name]) err(where, `задача ${t.id}: виджет «${t.widget.name}» не зарегистрирован`);
 }
 
+const lessons = Object.fromEntries((await loadAllLessons()).map((l) => [l.id, l]));
 for (const [id, lesson] of Object.entries(lessons)) {
   const where = `lesson ${id}`;
-  if (lesson.id !== id) err(where, `ключ реестра ${id} не совпадает с lesson.id ${lesson.id}`);
   if (!refIds.has(lesson.id)) err(where, 'нет в modules.ts');
+  if (!(id in lessonLoaders)) err(where, 'нет в реестре lessons.ts');
 
   const blocks = lesson.blocks;
   const widgetsN = blocks.filter((b) => b.t === 'widget').length;
@@ -76,7 +78,7 @@ for (const [id, lesson] of Object.entries(lessons)) {
     }
     const text = blockText(b);
     if (/\bTODO\b|lorem ipsum|FIXME/i.test(text)) err(where, 'найден TODO/lorem/FIXME');
-    if (/уточнить/i.test(text) && !openQuestions.includes(id)) warn(where, 'есть «уточнить», но нет записи в docs/open-questions.md');
+    if (/\[уточнить[^\]]*\]/i.test(text) && !openQuestions.includes(id)) warn(where, 'есть маркер [уточнить], но нет записи в docs/open-questions.md');
     for (const m of text.matchAll(/\blabs\/[\w./-]+/g)) {
       const p = m[0].replace(/[.,;:)]+$/, '');
       if (!existsSync(p)) err(where, `ссылка на несуществующий путь ${p}`);

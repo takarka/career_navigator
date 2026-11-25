@@ -27,6 +27,8 @@ jobs:
         run: npm test
       - name: Линтер контента
         run: npm run lint:content
+      - name: Проверка банка вопросов
+        run: npm run bank
       - name: Сборка dist (tsc --noEmit + vite build)
         run: npm run build
       - name: Бюджет размера стартового JS

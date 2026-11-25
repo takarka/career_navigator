@@ -1,11 +1,11 @@
 import { useState } from 'preact/hooks';
 import { modules } from '../content/modules.ts';
-import { lessons } from '../content/lessons.ts';
+import { isReady } from '../content/lessons.ts';
 import { cycleTheme, useDark } from './theme.ts';
 import { useProgress } from './state.ts';
 import { href, useRoute } from './router.ts';
 import { LazyWidget } from '../components/widgets.tsx';
-import { Home, LessonPage, ModulePage, SandboxPage, SearchPage } from './pages.tsx';
+import { Home, LessonPage, ModulePage, PracticePage, SandboxPage, SearchPage } from './pages.tsx';
 import { findLessonRef } from '../content/modules.ts';
 
 export function Shell() {
@@ -39,9 +39,9 @@ export function Shell() {
                 <ul>
                   <li class={`overview ${route.name === 'module' && route.id === m.id ? 'current' : ''}`}><a href={href.module(m.id)}>Обзор модуля</a></li>
                   {m.lessons.map((l) => (
-                    <li key={l.id} class={`${route.name === 'lesson' && route.id === l.id ? 'current' : ''} ${lessons[l.id] ? '' : 'soon'}`}>
+                    <li key={l.id} class={`${route.name === 'lesson' && route.id === l.id ? 'current' : ''} ${isReady(l.id) ? '' : 'soon'}`}>
                       <a href={href.lesson(l.id)}>
-                        <span class="check">{progress.lessons[l.id] ? '✓' : lessons[l.id] ? '○' : '·'}</span> {l.title}
+                        <span class="check">{progress.lessons[l.id] ? '✓' : isReady(l.id) ? '○' : '·'}</span> {l.title}
                       </a>
                     </li>
                   ))}
@@ -49,6 +49,13 @@ export function Shell() {
               </details>
             ))}
             <p class="side-extra"><a href={href.sandbox()}>JS-песочница</a></p>
+            <p class="side-extra"><b>Подготовка к собеседованию</b></p>
+            <ul class="side-links">
+              <li><a href={href.practice('interview')}>Мок-интервью</a></li>
+              <li><a href={href.practice('flashcards')}>Карточки</a></li>
+              <li><a href={href.practice('star')}>Истории STAR</a></li>
+              <li><a href={href.practice('intro')}>Рассказ о себе</a></li>
+            </ul>
           </nav>
         </aside>
         <main>
@@ -57,6 +64,7 @@ export function Shell() {
           {route.name === 'lesson' && <LessonPage id={route.id} key={route.id} />}
           {route.name === 'sandbox' && <SandboxPage />}
           {route.name === 'demo' && <LazyWidget name="demo-page" />}
+          {route.name === 'practice' && <PracticePage tool={route.tool} key={route.tool} />}
           {route.name === 'search' && <SearchPage q={route.q} key={route.q} />}
         </main>
       </div>

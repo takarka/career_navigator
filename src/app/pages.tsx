@@ -1,18 +1,20 @@
-import { useRef } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { findLessonRef, flatLessons, modules, priorityLabel } from '../content/modules.ts';
-import { lessons } from '../content/lessons.ts';
+import { isReady, loadLesson } from '../content/lessons.ts';
+import type { Lesson } from '../content/types.ts';
 import { BlockView } from '../components/Blocks.tsx';
 import { Sandbox } from '../components/Sandbox.tsx';
 import { modeInfo } from '../components/TaskCard.tsx';
+import { LazyWidget } from '../components/widgets.tsx';
 import { Toc } from '../components/Toc.tsx';
 import { Notes } from '../components/Notes.tsx';
 import { exportProgress, importProgress, setDetail, toggle, useProgress } from './state.ts';
-import { search } from './search.ts';
+import { ensureIndex, search } from './search.ts';
 import { href } from './router.ts';
 
 function moduleStats(id: string, progress: ReturnType<typeof useProgress>) {
   const m = modules.find((x) => x.id === id)!;
-  const ready = m.lessons.filter((l) => lessons[l.id]);
+  const ready = m.lessons.filter((l) => isReady(l.id));
   const done = m.lessons.filter((l) => progress.lessons[l.id]);
   return { total: m.lessons.length, ready: ready.length, done: done.length };
 }
@@ -21,7 +23,7 @@ export function Home() {
   const progress = useProgress();
   const file = useRef<HTMLInputElement>(null);
   const all = flatLessons();
-  const readyCount = all.filter((x) => lessons[x.ref.id]).length;
+  const readyCount = all.filter((x) => isReady(x.ref.id)).length;
   const doneCount = all.filter((x) => progress.lessons[x.ref.id]).length;
 
   const doExport = () => {
@@ -101,7 +103,7 @@ export function ModulePage({ id }: { id: string }) {
       <p class="lead">{m.summary}</p>
       <ol class="lesson-list">
         {m.lessons.map((l) => {
-          const ready = !!lessons[l.id];
+          const ready = isReady(l.id);
           return (
             <li key={l.id} class={ready ? '' : 'soon'}>
               <a href={href.lesson(l.id)}>
@@ -119,10 +121,23 @@ export function ModulePage({ id }: { id: string }) {
 
 export function LessonPage({ id }: { id: string }) {
   const progress = useProgress();
+  const [lesson, setLesson] = useState<Lesson | undefined>();
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    if (isReady(id)) {
+      loadLesson(id).then(
+        (l) => alive && setLesson(l),
+        () => alive && setFailed(true),
+      );
+    }
+    return () => {
+      alive = false;
+    };
+  }, [id]);
   const found = findLessonRef(id);
   if (!found) return <div class="page"><p>Урок не найден. <a href={href.home()}>На главную</a></p></div>;
   const { module: m, ref } = found;
-  const lesson = lessons[id];
   const all = flatLessons();
   const pos = all.findIndex((x) => x.ref.id === id);
   const prev = all[pos - 1];
@@ -132,7 +147,9 @@ export function LessonPage({ id }: { id: string }) {
     <div class="page lesson">
       <nav class="crumbs"><a href={href.home()}>Главная</a> › <a href={href.module(m.id)}>Модуль {m.num}. {m.title}</a></nav>
       <h1>{ref.title}</h1>
-      {!lesson && (
+      {isReady(id) && !lesson && !failed && <p class="muted" aria-busy="true">Загрузка урока…</p>}
+      {failed && <div class="callout warn" role="alert"><b>Не удалось загрузить урок.</b> Обновите страницу.</div>}
+      {!isReady(id) && (
         <div class="callout info">
           <div class="callout-title">🚧 Урок ещё в разработке</div>
           <p>Содержание появится по плану реализации. Сейчас готов урок про event loop в модуле 1 — он задаёт формат для остальных.</p>
@@ -174,12 +191,22 @@ export function SandboxPage() {
 }
 
 export function SearchPage({ q }: { q: string }) {
-  const hits = search(q);
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    void ensureIndex().then(() => alive && setReady(true));
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const hits = ready ? search(q) : [];
   return (
     <div class="page">
       <nav class="crumbs"><a href={href.home()}>Главная</a> › Поиск</nav>
       <h1>Поиск</h1>
-      {!q.trim() ? (
+      {!ready ? (
+        <p class="muted" aria-busy="true">Строю индекс…</p>
+      ) : !q.trim() ? (
         <p class="muted">Введи слово или фразу в строке поиска сверху.</p>
       ) : hits.length === 0 ? (
         <p>По запросу «{q}» ничего не найдено. Поиск идёт по заголовкам всех уроков и по тексту готовых.</p>
@@ -197,6 +224,26 @@ export function SearchPage({ q }: { q: string }) {
           </ul>
         </>
       )}
+    </div>
+  );
+}
+
+export const practiceTools: Record<string, { title: string; widget: string; lead: string }> = {
+  interview: { title: 'Мок-интервью', widget: 'mock-interview', lead: 'Отвечай письменно, затем сверяйся с эталоном и оценивай себя по ключевым пунктам. Результаты сохраняются, ответы можно выгрузить для разбора в чате с Claude.' },
+  flashcards: { title: 'Карточки (метод Лейтнера)', widget: 'flashcards', lead: 'Короткие повторения по вопросам банка. Правильные ответы уходят в коробки с более длинными интервалами.' },
+  star: { title: 'Истории STAR', widget: 'star-builder', lead: 'Подготовь 4 истории из реального опыта: оптимизация, инцидент, архитектура, конфликт.' },
+  intro: { title: 'Рассказ о себе', widget: 'intro-builder', lead: 'Рассказ на 60–90 секунд и честный ответ на вопрос «почему Middle».' },
+};
+
+export function PracticePage({ tool }: { tool: string }) {
+  const t = practiceTools[tool];
+  if (!t) return <div class="page"><p>Инструмент не найден. <a href={href.home()}>На главную</a></p></div>;
+  return (
+    <div class="page">
+      <nav class="crumbs"><a href={href.home()}>Главная</a> › Практика</nav>
+      <h1>{t.title}</h1>
+      <p class="lead">{t.lead}</p>
+      <LazyWidget name={t.widget} />
     </div>
   );
 }
