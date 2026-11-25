@@ -11,5 +11,7 @@ export default defineConfig({
   resolve: single ? { alias: { '@electric-sql/pglite': new URL('./src/engine/pglite-stub.ts', import.meta.url).pathname } } : undefined,
   plugins: [preact(), ...(single ? [viteSingleFile()] : [])],
   build: { target: 'es2022', outDir: single ? 'dist-single' : 'dist' },
-  test: { environment: 'node', include: ['src/**/*.test.ts'], fileParallelism: false },
+  test: { environment: 'node', include: ['src/**/*.test.ts'], fileParallelism: false,
+    // упражнения m02 заранее создают Promise.reject(new Error('boom'|'fail')); на заготовке (она не ждёт промис) rejection остаётся необработанным. Остальные необработанные ошибки по-прежнему роняют прогон.
+    onUnhandledError: (error: { message?: string }) => (/^(boom|fail)$/.test(String(error?.message)) ? false : undefined) },
 } as never);

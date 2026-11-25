@@ -24,6 +24,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: redis-server для оракула мини-Redis и лаборатории m04
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq redis-server && sudo systemctl stop redis-server || true
       - name: Тесты (оракул event loop сверяется с реальным Node)
         run: npm test
       - name: Линтер контента
