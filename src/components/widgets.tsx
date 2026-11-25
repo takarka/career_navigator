@@ -19,6 +19,10 @@ export const widgetLoaders: Record<string, () => Promise<AnyComponent>> = {
   'intro-builder': () => import('./IntroBuilder.tsx').then((m) => m.IntroBuilder),
   'diagram-canvas': () => import('./DiagramCanvas.tsx').then((m) => m.DiagramCanvas),
   'salary-table': () => import('./SalaryTable.tsx').then((m) => m.SalaryTable),
+  'zones-game': () => import('./ZonesGame.tsx').then((m) => m.ZonesGame),
+  'threadpool-sim': () => import('./ThreadPoolSim.tsx').then((m) => m.ThreadPoolSim),
+  'server-sim': () => import('./ServerSim.tsx').then((m) => m.ServerSim),
+  'block-demo': () => import('./BlockDemo.tsx').then((m) => m.BlockDemo),
   'test-exercise': () => import('./TestExerciseView.tsx').then((m) => m.TestExerciseView),
 };
 

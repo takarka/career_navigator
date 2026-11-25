@@ -7,6 +7,8 @@ import type { Lesson } from './types.ts';
  * Новый урок = одна строка здесь.
  */
 export const lessonLoaders: Record<string, () => Promise<Lesson>> = {
+  'm01-l01': () => import('./m01/architecture.ts').then((m) => m.architecture),
+  'm01-l03': () => import('./m01/blocking.ts').then((m) => m.blocking),
   'm01-l02': () => import('./m01/event-loop.ts').then((m) => m.eventLoop),
   'm14-l01': () => import('./m14/l01-intro.ts').then((m) => m.introLesson),
   'm14-l02': () => import('./m14/l02-star.ts').then((m) => m.starLesson),
