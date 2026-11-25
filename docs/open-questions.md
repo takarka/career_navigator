@@ -23,7 +23,8 @@
 | Модуль 4: терминал и симуляторы Redis | ответы мини-Redis на 69 команд сверены с настоящим redis-server 7.0.15 (`src/engine/miniredis.oracle.test.ts`); лаборатория `labs/m04/lock` на живом Redis; симуляторы rate limit и кэша — модели без оракула | при добавлении команд расширять сценарий сверки |
 | m04-l05: актуальные рекомендации по Redlock | упомянут без сверки с документацией Redis | сверить с redis.io/docs |
 | Модуль 6: ValidationPipe, class-validator, @nestjs/config, TypeORM-примеры | проверено запуском 2026-11-25 (`labs/m06/nest-check`: tsc с emitDecoratorMetadata, class-validator 0.15, @nestjs/config 12, TypeORM 1.1, PostgreSQL 17); Zod и OpenAPI не проверялись | закрыто для ValidationPipe, Config, TypeORM
-| m06-l03 и m06-l04: интеграция Zod и OpenAPI, выбор ORM | рекомендации не сверены с актуальной документацией | сверить на момент выбора |
+| m06-l03: интеграция Zod и OpenAPI | проверено запуском 2026-11-25 (`labs/m06/nest-check/src/zod-openapi.ts`, 5 проверок OK) | закрыто |
+| m06-l04: выбор слоя доступа к данным (TypeORM, Prisma, MikroORM, Knex, pg) | рекомендации не сверены с актуальной документацией | сверить на момент выбора |
 | m05-l01: статус спецификации Idempotency-Key | заголовок описан в черновике IETF; актуальность не сверялась | сверить на datatracker.ietf.org |
 | m05-l04: настройка @nestjs/swagger и плагина CLI | не проверялась запуском | собрать пример и проверить |
 | Модуль 5: уроки про WebSocket (m05-l05) | текст без запуска реального WebSocket-сервера | добавить лабораторию с библиотекой ws |

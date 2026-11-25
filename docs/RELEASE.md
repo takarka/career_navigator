@@ -21,4 +21,4 @@
 - [x] Зелёные ci.yml и oracle.yml (ветка, 2026-11-25)
 - [x] Зелёный pages.yml (после слияния в `main`, 2026-11-25)
 - [x] Сборки `dist-single` и `dist-offline` прикрепляет `release.yml`
-- [x] Просмотрен `open-questions.md` (остались осознанные пункты: ШЭП и Kalkan, интеграции Zod и OpenAPI, нагрузочный прогон эталонов)
+- [x] Просмотрен `open-questions.md` (остались осознанные пункты: ШЭП и Kalkan)
